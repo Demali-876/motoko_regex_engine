@@ -16,6 +16,21 @@ module{
       };
       Text.fromIter(slicedChars);
     };
+    public func arrayLast<T>(arr: [T]) : ?T {
+      if (arr.size() == 0) {
+        null
+      } else {
+        ?arr[arr.size() - 1]
+      }
+    };
+    // Utility function to slice an array of any type
+    public func sliceArray<T>(arr: [T], start: Nat, end: Nat) : [T] {
+    if (start >= arr.size() or end > arr.size() or start > end) {
+        return [];
+    };
+    Array.tabulate<T>(end - start, func(i:Nat) { arr[start + i] })
+    };
+
     public type ASTNode = {
     #Character : Char;
     #Concatenation : (AST, AST); 
@@ -56,6 +71,7 @@ module{
   public type CharacterClass = {
     #Single : Char;
     #Range : (Char, Char);
+    #Metacharacter : MetacharacterType;
   };
   public type QuantifierType = {
     #ZeroOrMore;

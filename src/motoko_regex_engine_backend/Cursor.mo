@@ -13,12 +13,12 @@ module {
       pos
     };
 
-    public func current() : ?Char {
-      if (pos < string.size()) {
-        ?string[pos]
-      } else {
-        null
-      }
+    public func current() : Char {
+        if (pos < string.size()) {
+            string[pos]
+        } else {
+    Debug.trap("Attempted to access character out of bounds at position " # Nat.toText(pos));
+        }
     };
 
     public func peek(offset : Nat) : ?Char {

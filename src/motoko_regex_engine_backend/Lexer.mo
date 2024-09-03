@@ -1,4 +1,7 @@
 import Text "mo:base/Text";
+import Nat "mo:base/Nat";
+import Array "mo:base/Array";
+import Int "mo:base/Int";
 import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
@@ -36,8 +39,7 @@ module {
 
     private func nextToken() : Result.Result<Types.Token, Types.LexerError> {
       switch (cursor.current()) {
-        case (null) { #err(#UnexpectedEndOfInput) };
-        case (?char) {
+        case (char) {
           let token = switch char {
             case '.' { #ok(createToken(#Metacharacter(#Dot), ".")) };
             case '*' { #ok(createToken(#Quantifier(#ZeroOrMore), "*")) };
@@ -80,37 +82,84 @@ module {
       }
     };
 
-    private func tokenizeCharacterClass() : Result.Result<Types.Token, Types.LexerError> {
-      let start = cursor.getPos();
-      cursor.inc();  // Move past the opening '['
-      var isNegated = false;
+        private func tokenizeCharacterClass() : Result.Result<Types.Token, Types.LexerError> {
+        let start = cursor.getPos();
+        cursor.inc();  // Move past the opening '['
+        var isNegated = false;
 
-      switch (cursor.current()) {
-        case (?'^') {
-          isNegated := true;
-          cursor.inc();
-        };
-        case (_) { };
-      };
-
-      while (cursor.hasNext()) {
-        switch (cursor.current()) {
-          case (?']') { 
+        // Check for negation
+        if (cursor.hasNext() and cursor.current() == '^') {
+            isNegated := true;
             cursor.inc();
-            return #ok(createToken(#CharacterClass(isNegated, []), cursor.slice(start, ?cursor.getPos())));
-          };
-          case (_) { cursor.inc() };
         };
-      };
 
-      #err(#UnexpectedEndOfInput)
+        var classTokens: [Types.CharacterClass] = [];
+
+        while (cursor.hasNext() and cursor.current() != ']') {
+            let c = cursor.current();
+            cursor.inc();
+
+            if (c == '\\') {
+                // Handle escaped characters and metacharacters
+                if (cursor.hasNext()) {
+                    let nextChar = cursor.current();
+                    cursor.inc();
+                    switch (nextChar) {
+                        case 'd' { classTokens := Array.append(classTokens, [#Metacharacter(#Digit)]); };
+                        case 'D' { classTokens := Array.append(classTokens, [#Metacharacter(#NonDigit)]); };
+                        case 'w' { classTokens := Array.append(classTokens, [#Metacharacter(#WordChar)]); };
+                        case 'W' { classTokens := Array.append(classTokens, [#Metacharacter(#NonWordChar)]); };
+                        case 's' { classTokens := Array.append(classTokens, [#Metacharacter(#Whitespace)]); };
+                        case 'S' { classTokens := Array.append(classTokens, [#Metacharacter(#NonWhitespace)]); };
+                        case _ { classTokens := Array.append(classTokens, [#Single(nextChar)]); };
+                    };
+                } else {
+                    return #err(#UnexpectedEndOfInput);
+                };
+            } else if (c == '-' and classTokens.size() > 0 and cursor.hasNext()) {
+                let nextChar = cursor.current();
+                cursor.inc();
+                if (nextChar == ']' or nextChar == '-') {
+                    return #err(#GenericError("Invalid character range at position " # Nat.toText(cursor.getPos()) # ": '" # Text.fromChar(c) # "-" # Text.fromChar(nextChar) # "'"));
+                } else {
+                    switch (Types.arrayLast(classTokens)) {
+                        case (?#Single(lastChar)) {
+                            classTokens := Array.append(Types.sliceArray(classTokens, 0, Int.abs(classTokens.size() - 1)), [#Range(lastChar, nextChar)]);
+                        };
+                        case _ {
+                            return #err(#GenericError("Unexpected state in character class at position " # Nat.toText(cursor.getPos())));
+                        };
+                    };
+                };
+            } else if (c == '-') {
+                classTokens := Array.append(classTokens, [#Single(c)]);
+            } else {
+                classTokens := Array.append(classTokens, [#Single(c)]);
+            };
+        };
+
+        // Check for unclosed character class
+        if (not cursor.hasNext() or cursor.current() != ']') {
+            return #err(#GenericError("Unclosed character class at position " # Nat.toText(cursor.getPos())));
+        };
+
+        cursor.inc();  // Move past the closing ']'
+
+        // Look ahead for quantifiers
+        if (cursor.hasNext()) {
+            let nextChar = cursor.current();
+            if (nextChar == '{' or nextChar == '*' or nextChar == '+' or nextChar == '?') {
+                return #ok(createToken(#CharacterClass(isNegated, classTokens), Types.slice(input, start, ?cursor.getPos())));
+            };
+        };
+
+        return #ok(createToken(#CharacterClass(isNegated, classTokens), Types.slice(input, start, ?cursor.getPos())));
     };
 
     private func tokenizeEscapedChar() : Result.Result<Types.Token, Types.LexerError> {
       cursor.inc();
       switch (cursor.current()) {
-        case (null) { #err(#UnexpectedEndOfInput) };
-        case (?nextChar) {
+        case (nextChar) {
           switch nextChar {
             case 'w' { #ok(createToken(#Metacharacter(#WordChar), "\\w")) };
             case 'W' { #ok(createToken(#Metacharacter(#NonWordChar), "\\W")) };
@@ -135,7 +184,7 @@ module {
 
       while (cursor.hasNext()) {
         switch (cursor.current()) {
-          case (?'}') { 
+          case ('}') { 
             cursor.inc();
             return #ok(createToken(#QuantifierRange, cursor.slice(start, ?cursor.getPos())));
           };
