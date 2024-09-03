@@ -1,7 +1,7 @@
 {
   "canisters": {
     "motoko_regex_engine_backend": {
-      "main": "src/motoko_regex_engine_backend/main.mo",
+      "main": "src/motoko_regex_engine_backend/Regex.mo",
       "type": "motoko"
     }
   },
