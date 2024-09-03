@@ -45,7 +45,7 @@ module {
             case '?' { #ok(createToken(#Quantifier(#ZeroOrOne), "?")) };
             case '(' { #ok(createToken(#GroupStart, "(")) };
             case ')' { #ok(createToken(#GroupEnd, ")")) };
-            case '[' { parseCharacterClass() };
+            case '[' { tokenizeCharacterClass() };
             case ']' { #ok(createToken(#Character(char), Text.fromChar(char))) };
             case '^' { 
               if (cursor.getPos() == 0) {
@@ -56,8 +56,8 @@ module {
             };
             case '$' { #ok(createToken(#Anchor(#EndOfString), "$")) };
             case '|' { #ok(createToken(#Alternation, "|")) };
-            case '\\' { parseEscapedChar() };
-            case '{' { parseQuantifierRange() };
+            case '\\' { tokenizeEscapedChar() };
+            case '{' { tokenizeQuantifierRange() };
             case '}' { #ok(createToken(#Character(char), Text.fromChar(char))) };
             case _ { #ok(createToken(#Character(char), Text.fromChar(char))) };
           };
@@ -80,7 +80,7 @@ module {
       }
     };
 
-    private func parseCharacterClass() : Result.Result<Types.Token, Types.LexerError> {
+    private func tokenizeCharacterClass() : Result.Result<Types.Token, Types.LexerError> {
       let start = cursor.getPos();
       cursor.inc();  // Move past the opening '['
       var isNegated = false;
@@ -106,7 +106,7 @@ module {
       #err(#UnexpectedEndOfInput)
     };
 
-    private func parseEscapedChar() : Result.Result<Types.Token, Types.LexerError> {
+    private func tokenizeEscapedChar() : Result.Result<Types.Token, Types.LexerError> {
       cursor.inc();
       switch (cursor.current()) {
         case (null) { #err(#UnexpectedEndOfInput) };
@@ -129,7 +129,7 @@ module {
       }
     };
 
-    private func parseQuantifierRange() : Result.Result<Types.Token, Types.LexerError> {
+    private func tokenizeQuantifierRange() : Result.Result<Types.Token, Types.LexerError> {
       let start = cursor.getPos();
       cursor.inc();
 
