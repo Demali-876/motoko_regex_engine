@@ -1,0 +1,16 @@
+{
+  "canisters": {
+    "motoko_regex_engine_backend": {
+      "main": "src/motoko_regex_engine_backend/main.mo",
+      "type": "motoko"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
