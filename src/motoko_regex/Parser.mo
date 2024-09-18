@@ -1,7 +1,7 @@
 import Debug "mo:base/Debug";
-import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Types "Types";
+import Extensions "Extensions";
 
 module {
   public class Parser(tokens: [Types.Token]) {
@@ -66,64 +66,41 @@ module {
     private func parseQuantifier(): ?Types.AST {
     var node = parsePrimary();
     if (cursor < tokens.size()) {
-        switch (peekToken()) {
+      switch (peekToken()) {
         case (?token) {
-            switch (token.tokenType) {
+          switch (token.tokenType) {
             case (#Quantifier(quantType)) {
-                ignore advanceCursor();
-                switch (node) {
+              ignore advanceCursor();
+              switch (node) {
                 case (?n) {
-                    // Check if the next token is a lazy or possessive quantifier
-                    let nextToken = peekToken();
-                    switch (nextToken) {
-                    case (?t) {
-                        switch (t.tokenType) {
-                        case (#Quantifier(#Lazy)) {
-                            ignore advanceCursor();
-                            node := ?#node(#Quantifier(#Lazy, n));
-                        };
-                        case (#Quantifier(#Possessive)) {
-                            ignore advanceCursor();
-                            node := ?#node(#Quantifier(#Possessive, n));
-                        };
-                        case (_) {
-                            node := ?#node(#Quantifier(quantType, n));
-                        };
-                        };
-                    };
-                    case null {
-                        node := ?#node(#Quantifier(quantType, n));
-                    };
-                    };
+                  node := ?#node(#Quantifier(quantType, n));
                 };
                 case null {};
-                };
+              };
             };
             case (#QuantifierRange) {
-                let rangeToken = advanceCursor();
-                switch (rangeToken) {
+              let rangeToken = advanceCursor();
+              switch (rangeToken) {
                 case (?rt) {
-                    let (min, max) = parseQuantifierRange(rt.value);
-                    switch (node) {
+                  let (min, max) = Extensions.parseQuantifierRange(rt.value);
+                  switch (node) {
                     case (?n) {
-                        node := ?#node(#Quantifier(#Range(min, max), n));
+                      node := ?#node(#Quantifier(#Range(min, max), n));
                     };
                     case null {};
-                    };
+                  };
                 };
                 case null {};
-                };
+              };
             };
             case (_) {};
-            };
+          };
         };
         case (null) {};
-        };
+      };
     };
     node
-    };
-
-
+  };
 
     private func parsePrimary(): ?Types.AST {
       switch (advanceCursor()) {
@@ -162,41 +139,6 @@ module {
         };
         case (null) { null };
       }
-    };
-
-    private func parseQuantifierRange(value: Text): (Nat, ?Nat) {
-      let chars = Text.toIter(value);
-      var min: Nat = 0;
-      var max: ?Nat = null;
-      var parsingMin = true;
-      
-      label l for (char in chars) {
-        if (char == '{' or char == '}') {
-          continue l;
-        };
-        if (char == ',') {
-          parsingMin := false;
-          continue l;
-        };
-        switch (Nat.fromText(Text.fromChar(char))) {
-          case (?d) {
-            if (parsingMin) {
-              min := min * 10 + d;
-            } else {
-              max := switch (max) {
-                case (null) ?d;
-                case (?m) ?(m * 10 + d);
-              };
-            };
-          };
-          case (null) {
-            Debug.print("Invalid character in quantifier range: " # Text.fromChar(char));
-            return (0, null);
-          };
-        };
-      };
-      
-      (min, max)
     };
 
     private func expectToken(expectedType: Types.TokenType): ?Types.Token {

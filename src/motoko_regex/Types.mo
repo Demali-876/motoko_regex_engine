@@ -1,36 +1,6 @@
 import Text "mo:base/Text";
-import Array "mo:base/Array";
+import Char "mo:base/Char";
 module{
-    //finds character at given position 0 based indexing
-    public func charAt(i : Nat, t : Text) : Char { 
-      let arr = Text.toArray(t);
-      arr[i];
-    };
-
-    //slice a text 
-    public func slice(text : Text, start : Nat, end : ?Nat) : Text {
-      let chars = Text.toArray(text);
-      let slicedChars = switch (end) {
-        case null { Array.slice<Char>(chars, start, chars.size()) };
-        case (?e) { Array.slice<Char>(chars, start, e) };
-      };
-      Text.fromIter(slicedChars);
-    };
-    public func arrayLast<T>(arr: [T]) : ?T {
-      if (arr.size() == 0) {
-        null
-      } else {
-        ?arr[arr.size() - 1]
-      }
-    };
-    // Utility function to slice an array of any type
-    public func sliceArray<T>(arr: [T], start: Nat, end: Nat) : [T] {
-    if (start >= arr.size() or end > arr.size() or start > end) {
-        return [];
-    };
-    Array.tabulate<T>(end - start, func(i:Nat) { arr[start + i] })
-    };
-
     public type ASTNode = {
     #Character : Char;
     #Concatenation : (AST, AST); 
@@ -72,14 +42,23 @@ module{
     #Single : Char;
     #Range : (Char, Char);
     #Metacharacter : MetacharacterType;
+    #Quantified : (CharacterClass, QuantifierType);
   };
-  public type QuantifierType = {
-    #ZeroOrMore;
-    #OneOrMore;
-    #ZeroOrOne;
-    #Range : (Nat, ?Nat);
+  public type QuantifierMode = {
+    #Greedy;
     #Lazy;
     #Possessive;
+};
+
+public type QuantifierType = {
+    #ZeroOrMore : QuantifierMode;
+    #OneOrMore : QuantifierMode;
+    #ZeroOrOne : QuantifierMode;
+    #Range : (Nat, ?Nat);
+};
+  public type Position={
+    #Instance :Nat;
+    #Span : (Nat, Nat);
   };
 
   public type GroupModifierType = {
@@ -103,8 +82,9 @@ module{
   public type Token = {
     tokenType : TokenType;
     value : Text;
-    position : Nat;
+    position : Position;
   };
+  
 
   public type LexerError = {
     #UnexpectedCharacter : Char;

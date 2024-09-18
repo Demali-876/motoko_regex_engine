@@ -4,13 +4,12 @@ import Compiler "Compiler";
 import Types "Types";
 
 actor {
-    // Test the Lexer
+
     public query func testLexer(t: Text): async [Types.Token] {
         let lexer = Lexer.Lexer(t);
         lexer.tokenize();
     };
 
-    // Test the Parser
     public query func testParser(t: Text): async ?Types.AST {
         let lexer = Lexer.Lexer(t);
         let tokenResult = lexer.tokenize();
@@ -18,7 +17,6 @@ actor {
         parser.parse();
     };
 
-    // Test the Compiler
     public query func testCompiler(t: Text): async Types.CompiledRegex {
         let lexer = Lexer.Lexer(t);
         let tokenResult = lexer.tokenize();
