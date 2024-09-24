@@ -16,7 +16,7 @@ module {
       let (start, end) = switch (ast) {
         case (#node(node)) compileNode(node, transitions);
         };
-        
+
       {
         transitions = Buffer.toArray(transitions);
         startState = start;

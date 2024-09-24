@@ -20,44 +20,40 @@ module{
     var max: ?Nat = null;
     var parsingMin = true;
 
-    // Use a labeled loop for more control over flow
     label l for (char in chars) {
         switch (char) {
-            case '{' { continue l; };  // Ignore the opening brace
-            case '}' { break l; };     // Break when closing brace is found
-            case ',' { 
-                parsingMin := false;   // Switch from parsing min to max
+            case '{' { continue l; };
+            case '}' { break l; };
+            case ',' {
+                parsingMin := false;
                 continue l;
             };
             case _ {
-                // Try to convert character to a digit
                 switch (Nat.fromText(Text.fromChar(char))) {
                     case (?digit) {
                         if (parsingMin) {
-                            min := min * 10 + digit;  // Accumulate digits for min
+                            min := min * 10 + digit;
                         } else {
                             max := switch (max) {
-                                case (null) ?digit;     // Start max with the first digit
-                                case (?m) ?(m * 10 + digit); // Accumulate digits for max
+                                case (null) ?digit;
+                                case (?m) ?(m * 10 + digit);
                             };
                         };
                     };
                     case (null) {
                         Debug.print("Invalid character in quantifier range: " # Text.fromChar(char));
-                        return (0, null);  // Return (0, null) on invalid input
+                        return (0, null);
                     };
                 };
             };
         };
     };
-
-    // Return the parsed range
     switch (max) {
-        case (null) (min, ?min);  // If no max is provided, min == max
-        case (?m) (min, ?m);      // Return the parsed min and max
+        case (null) (min, ?min);
+        case (?m) (min, ?m); 
         }
     };
-    
+
     public func metacharToRanges(metaType: Types.MetacharacterType) : [(Char, Char)] {
           switch metaType {
               case (#Digit) {

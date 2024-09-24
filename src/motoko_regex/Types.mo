@@ -84,7 +84,6 @@ public type QuantifierType = {
     value : Text;
     position : Position;
   };
-  
 
   public type LexerError = {
     #UnexpectedCharacter : Char;

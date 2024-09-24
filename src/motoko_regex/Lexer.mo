@@ -213,12 +213,12 @@ module {
         return #err(#GenericError("Quantifier without preceding token"));
     };
 
-    let previousToken = tokenBuffer.get(Int.abs(tokenBuffer.size() - 1));
+    let previousToken = Buffer.last(tokenBuffer);
 
     let (finalQuantifier, additionalChar) = if (cursor.hasNext()) {
         switch (cursor.peekNext()) {
-        case '?' { 
-            cursor.inc(); 
+        case '?' {
+            cursor.inc();
             switch (quantifier) {
             case (#ZeroOrMore(_)) (#ZeroOrMore(#Lazy), "?");
             case (#OneOrMore(_)) (#OneOrMore(#Lazy), "?");
@@ -226,8 +226,8 @@ module {
             case (#Range(min, max)) (#Range(min, max), "");
             }
         };
-        case '+' { 
-            cursor.inc(); 
+        case '+' {
+            cursor.inc();
             switch (quantifier) {
             case (#ZeroOrMore(_)) (#ZeroOrMore(#Possessive), "+");
             case (#OneOrMore(_)) (#OneOrMore(#Possessive), "+");
@@ -241,16 +241,16 @@ module {
         (quantifier, "");
     };
 
-    let quantifierToken = createToken(#Quantifier(finalQuantifier), 
+    let quantifierToken = createToken(#Quantifier(finalQuantifier),
         previousToken.value # (
         switch finalQuantifier {
             case (#ZeroOrMore(_)) "*";
             case (#OneOrMore(_)) "+";
             case (#ZeroOrOne(_)) "?";
-            case (#Range(min, max)) { 
-            "{" # Nat.toText(min) # 
-            (switch max { 
-                case null ""; 
+            case (#Range(min, max)) {
+            "{" # Nat.toText(min) #
+            (switch max {
+                case null "";
                 case (?m) "," # Nat.toText(m) 
             }) # "}"
             };
