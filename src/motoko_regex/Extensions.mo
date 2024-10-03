@@ -20,7 +20,7 @@ module{
         var max: ?Nat = null;
         var parsingMin = true;
         var currentNumber = "";
-        var foundComma = false;  // Track if a comma has been found
+        var foundComma = false;
 
         label l for (char in chars) {
             switch (char) {
@@ -121,7 +121,7 @@ module{
       };
 
     //finds character at given position 0 based indexing
-    public func charAt(i : Nat, t : Text) : Char { 
+    public func charAt(i : Nat, t : Text) : Char {
       let arr = Text.toArray(t);
       arr[i];
     };
