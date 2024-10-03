@@ -33,13 +33,13 @@ module{
                         min := switch (Nat.fromText(currentNumber)) {
                             case (?n) n;
                             case null {
-                                Debug.print("Invalid minimum in quantifier range: " # currentNumber);
+                                Debug.trap("Invalid minimum in quantifier range: " # currentNumber);
                                 return (0, null);
                             };
                         };
                         currentNumber := "";
                     } else {
-                        Debug.print("Invalid quantifier range: comma without preceding number");
+                        Debug.trap("Invalid quantifier range: comma without preceding number");
                         return (0, null);
                     };
                     parsingMin := false;
@@ -50,7 +50,7 @@ module{
                     if (char >= '0' and char <= '9') {
                         currentNumber := currentNumber # Text.fromChar(char);
                     } else {
-                        Debug.print("Invalid character in quantifier range: " # Text.fromChar(char));
+                        Debug.trap("Invalid character in quantifier range: " # Text.fromChar(char));
                         return (0, null);
                     };
                 };
@@ -61,7 +61,7 @@ module{
                 min := switch (Nat.fromText(currentNumber)) {
                     case (?n) n;
                     case null {
-                        Debug.print("Invalid minimum in quantifier range: " # currentNumber);
+                        Debug.trap("Invalid minimum in quantifier range: " # currentNumber);
                         return (0, null);
                     };
                 };
@@ -69,13 +69,13 @@ module{
                 max := switch (Nat.fromText(currentNumber)) {
                     case (?n) ?n;
                     case null {
-                        Debug.print("Invalid maximum in quantifier range: " # currentNumber);
+                        Debug.trap("Invalid maximum in quantifier range: " # currentNumber);
                         return (0, null);
                     };
                 };
             };
         } else if (parsingMin) {
-            Debug.print("Empty quantifier range: no values found");
+            Debug.trap("Empty quantifier range: no values found");
             return (0, null);
         };
         switch (max) {

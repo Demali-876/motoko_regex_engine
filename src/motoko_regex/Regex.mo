@@ -10,7 +10,7 @@ actor {
         lexer.tokenize();
     };
 
-    /*public query func testParser(t: Text): async ?Types.AST {
+    public query func testParser(t: Text): async ?Types.AST {
         let lexer = Lexer.Lexer(t);
         let tokenResult = lexer.tokenize();
         let parser = Parser.Parser(tokenResult);
@@ -22,14 +22,12 @@ actor {
         let tokenResult = lexer.tokenize();
         let parser = Parser.Parser(tokenResult);
         let astResult = parser.parse();
-        
         switch (astResult) {
             case (?ast) {
                 let compiler = Compiler.Compiler();
                 compiler.compile(ast);
             };
             case null {
-                // Return an empty compiled regex if parsing fails
                 {
                     transitions = [];
                     startState = 0;
@@ -38,6 +36,6 @@ actor {
                 };
             };
         };
-    };*/
+    };
 };
 

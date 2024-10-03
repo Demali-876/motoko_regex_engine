@@ -1,7 +1,6 @@
-/* import Debug "mo:base/Debug";
+import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Types "Types";
-import Extensions "Extensions";
 
 module {
   public class Parser(tokens: [Types.Token]) {
@@ -64,45 +63,31 @@ module {
     };
 
     private func parseQuantifier(): ?Types.AST {
-    var node = parsePrimary();
-    if (cursor < tokens.size()) {
-      switch (peekToken()) {
-        case (?token) {
-          switch (token.tokenType) {
-            case (#Quantifier(quantType)) {
-              ignore advanceCursor();
-              switch (node) {
-                case (?n) {
-                  node := ?#node(#Quantifier(quantType, n));
-                };
-                case null {};
-              };
-            };
-            case (#QuantifierRange) {
-              let rangeToken = advanceCursor();
-              switch (rangeToken) {
-                case (?rt) {
-                  let (min, max) = Extensions.parseQuantifierRange(rt.value);
-                  switch (node) {
-                    case (?n) {
-                      node := ?#node(#Quantifier(#Range(min, max), n));
-                    };
-                    case null {};
+      var node = parsePrimary();
+
+      if (cursor < tokens.size()) {
+          switch (peekToken()) {
+              case (?token) {
+                  switch (token.tokenType) {
+                      case (#Quantifier(quantType)) {
+                          ignore advanceCursor();
+                          switch (node) {
+                              case (?n) {
+                                  node := ?#node(#Quantifier(quantType, n));
+                              };
+                              case null {};
+                          };
+                      };
+                      case (_) {};
                   };
-                };
-                case null {};
               };
-            };
-            case (_) {};
+              case (null) {};
           };
-        };
-        case (null) {};
       };
-    };
-    node
+      node
   };
 
-    private func parsePrimary(): ?Types.AST {
+  private func parsePrimary(): ?Types.AST {
       switch (advanceCursor()) {
         case (?token) {
           switch (token.tokenType) {
@@ -177,4 +162,3 @@ module {
     };
   };
 };
-*/

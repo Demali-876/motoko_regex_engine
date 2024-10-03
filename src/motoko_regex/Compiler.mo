@@ -1,4 +1,4 @@
-/* import Types "Types";
+import Types "Types";
 import Buffer "mo:base/Buffer";
 import Order "mo:base/Order";
 import Iter "mo:base/Iter";
@@ -76,108 +76,77 @@ module {
       (start, end)
     };
 
-    private func compileQuantifier(quantType : Types.QuantifierType, subExpr : Types.AST, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
+    private func compileQuantifier(quantType: Types.QuantifierType, subExpr: Types.AST, transitions: Buffer.Buffer<(Types.State, Types.Transition, Types.State)>): (Types.State, Types.State) {
     let (subStart, subEnd) = switch (subExpr) {
-      case (#node(node)) compileNode(node, transitions);
+        case (#node(node)) compileNode(node, transitions);
     };
+
     let start = nextState;
     nextState += 1;
     let end = nextState;
     nextState += 1;
 
-    switch (quantType) {
-      case (#ZeroOrMore(mode)) {
-        switch (mode) {
-          case (#Greedy){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((start, #Epsilon, end));
-            transitions.add((subEnd, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-          case (#Lazy){
-            transitions.add((start, #Epsilon, end));
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, start));
-          };
-          case (#Possessive){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-        };
-      };
-      case (#OneOrMore(mode)) {
-        switch (mode) {
-          case (#Greedy){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-          case (#Lazy){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, start));
-            transitions.add((start, #Epsilon, end));
-          };
-          case (#Possessive){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-        };
-      };
-      case (#ZeroOrOne(mode)) {
-        switch (mode) {
-          case (#Greedy){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((start, #Epsilon, end));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-          case (#Lazy){
-            transitions.add((start, #Epsilon, end));
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-          case (#Possessive){
-            transitions.add((start, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, end));
-          };
-        };
-      };
-      case (#Range(min, max)) {
-        var currentState = start;
+    // Destructure the quantifier type
+    let {min; max; mode} = quantType;
 
-        // Create a chain of 'min' repetitions
-        for (_ in Iter.range(0, min - 1)) {
-          let nextState = getNextState();
-          transitions.add((currentState, #Epsilon, subStart));
-          transitions.add((subEnd, #Epsilon, nextState));
-          currentState := nextState;
+    // Handle 'min' repetitions
+    var currentState = start;
+    for (_ in Iter.range(0, min - 1)) {
+        let nextState = getNextState();
+        transitions.add((currentState, #Epsilon, subStart));
+        transitions.add((subEnd, #Epsilon, nextState));
+        currentState := nextState;
+    };
+    // Handle additional repetitions based on the quantifier mode and max value
+    switch (max) {
+        case (null) {  // Infinite upper bound
+            switch (mode) {
+                case (#Greedy) {
+                    transitions.add((currentState, #Epsilon, subStart));
+                    transitions.add((subEnd, #Epsilon, currentState));
+                    transitions.add((currentState, #Epsilon, end));
+                };
+                case (#Lazy) {
+                    transitions.add((currentState, #Epsilon, end));
+                    transitions.add((currentState, #Epsilon, subStart));
+                    transitions.add((subEnd, #Epsilon, currentState));
+                };
+                case (#Possessive) {
+                    transitions.add((currentState, #Epsilon, subStart));
+                    transitions.add((subEnd, #Epsilon, currentState));
+                };
+            };
         };
-
-        switch (max) {
-          case (null) {
-            // Infinite upper bound
-            transitions.add((currentState, #Epsilon, subStart));
-            transitions.add((subEnd, #Epsilon, currentState));
-            transitions.add((currentState, #Epsilon, end));
-          };
-          case (?maxVal) {
+        case (?maxVal) {
             if (maxVal > min) {
-              // Add optional repetitions
-              for (_ in Iter.range(0, maxVal - min - 1)) {
-                let nextState = getNextState();
-                transitions.add((currentState, #Epsilon, subStart));
-                transitions.add((currentState, #Epsilon, nextState));
-                transitions.add((subEnd, #Epsilon, nextState));
-                currentState := nextState;
-              };
+                // Add optional repetitions based on the mode
+                for (_ in Iter.range(0, maxVal - min - 1)) {
+                    let nextState = getNextState();
+                    switch (mode) {
+                        case (#Greedy) {
+                            transitions.add((currentState, #Epsilon, subStart));
+                            transitions.add((currentState, #Epsilon, nextState));
+                            transitions.add((subEnd, #Epsilon, nextState));
+                        };
+                        case (#Lazy) {
+                            transitions.add((currentState, #Epsilon, nextState));
+                            transitions.add((currentState, #Epsilon, subStart));
+                            transitions.add((subEnd, #Epsilon, nextState));
+                        };
+                        case (#Possessive) {
+                            transitions.add((currentState, #Epsilon, subStart));
+                            transitions.add((subEnd, #Epsilon, nextState));
+                        };
+                    };
+                    currentState := nextState;
+                };
             };
             transitions.add((currentState, #Epsilon, end));
-          };
         };
-      };
     };
 
     (start, end)
-  };
+};
 
     private func getNextState() : Types.State {
       let state = nextState;
@@ -324,4 +293,4 @@ module {
       (start, end)
       }
     };
-}*/
+}

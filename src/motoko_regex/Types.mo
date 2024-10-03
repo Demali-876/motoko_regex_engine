@@ -20,7 +20,6 @@ module{
     #Quantifier : QuantifierType;
     #GroupStart;
     #GroupEnd;
-    #QuantifierRange;
     #GroupModifier : GroupModifierType;
     #CharacterClass : (Bool, [CharacterClass]);
     #Anchor : AnchorType;
