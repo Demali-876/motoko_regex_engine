@@ -11,7 +11,6 @@ module{
     #CharacterClass : (Bool, [CharacterClass]); 
     #Anchor : AnchorType;
   };
-
   public type AST = {
     #node : ASTNode;
   };
@@ -51,11 +50,10 @@ module{
 };
 
 public type QuantifierType = {
-    #ZeroOrMore : QuantifierMode;
-    #OneOrMore : QuantifierMode;
-    #ZeroOrOne : QuantifierMode;
-    #Range : (Nat, ?Nat);
-};
+    min : Nat;
+    max : ?Nat;
+    mode : QuantifierMode;
+  };
   public type Position={
     #Instance :Nat;
     #Span : (Nat, Nat);

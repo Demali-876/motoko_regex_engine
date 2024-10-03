@@ -15,43 +15,79 @@ module{
     }
     };
     public func parseQuantifierRange(rangeStr: Text): (Nat, ?Nat) {
-    let chars = Text.toIter(rangeStr);
-    var min: Nat = 0;
-    var max: ?Nat = null;
-    var parsingMin = true;
+        let chars = Text.toIter(rangeStr);
+        var min: Nat = 0;
+        var max: ?Nat = null;
+        var parsingMin = true;
+        var currentNumber = "";
+        var foundComma = false;  // Track if a comma has been found
 
-    label l for (char in chars) {
-        switch (char) {
-            case '{' { continue l; };
-            case '}' { break l; };
-            case ',' {
-                parsingMin := false;
-                continue l;
-            };
-            case _ {
-                switch (Nat.fromText(Text.fromChar(char))) {
-                    case (?digit) {
-                        if (parsingMin) {
-                            min := min * 10 + digit;
-                        } else {
-                            max := switch (max) {
-                                case (null) ?digit;
-                                case (?m) ?(m * 10 + digit);
+        label l for (char in chars) {
+            switch (char) {
+                case ',' {
+                    if (foundComma) {
+                        Debug.print("Invalid quantifier range: more than one comma");
+                        return (0, null);
+                    };
+                    if (currentNumber != "") {
+                        min := switch (Nat.fromText(currentNumber)) {
+                            case (?n) n;
+                            case null {
+                                Debug.print("Invalid minimum in quantifier range: " # currentNumber);
+                                return (0, null);
                             };
                         };
+                        currentNumber := "";
+                    } else {
+                        Debug.print("Invalid quantifier range: comma without preceding number");
+                        return (0, null);
                     };
-                    case (null) {
+                    parsingMin := false;
+                    foundComma := true;
+                    continue l;
+                };
+                case _ {
+                    if (char >= '0' and char <= '9') {
+                        currentNumber := currentNumber # Text.fromChar(char);
+                    } else {
                         Debug.print("Invalid character in quantifier range: " # Text.fromChar(char));
                         return (0, null);
                     };
                 };
             };
         };
-    };
-    switch (max) {
-        case (null) (min, ?min);
-        case (?m) (min, ?m); 
-        }
+        if (currentNumber != "") {
+            if (parsingMin) {
+                min := switch (Nat.fromText(currentNumber)) {
+                    case (?n) n;
+                    case null {
+                        Debug.print("Invalid minimum in quantifier range: " # currentNumber);
+                        return (0, null);
+                    };
+                };
+            } else {
+                max := switch (Nat.fromText(currentNumber)) {
+                    case (?n) ?n;
+                    case null {
+                        Debug.print("Invalid maximum in quantifier range: " # currentNumber);
+                        return (0, null);
+                    };
+                };
+            };
+        } else if (parsingMin) {
+            Debug.print("Empty quantifier range: no values found");
+            return (0, null);
+        };
+        switch (max) {
+            case (null) {
+                if (parsingMin) {
+                    (min, ?min)  // Case: `{n}`
+                } else {
+                    (min, null)  // Case: `{n,}`
+                };
+            };
+            case (?m) (min, ?m);  // Case: `{n,m}`
+        };
     };
 
     public func metacharToRanges(metaType: Types.MetacharacterType) : [(Char, Char)] {
