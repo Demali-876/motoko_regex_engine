@@ -5,9 +5,10 @@ import Iter "mo:base/Iter";
 import Char "mo:base/Char";
 import Array "mo:base/Array";
 import Extensions "Extensions";
+import Optimizer "Optimizer";
 
 module {
-  public class Compiler() {
+ /* public class Compiler() {
     private var nextState : Types.State = 0;
     private var captureGroups = Buffer.Buffer<Types.CaptureGroup>(8);
 
@@ -16,13 +17,14 @@ module {
       let (start, end) = switch (ast) {
         case (#node(node)) compileNode(node, transitions);
         };
-
+      let optimizer =  Optimizer.Optimizer();
+      optimizer.optimize(
       {
         transitions = Buffer.toArray(transitions);
         startState = start;
         acceptStates = [end];
         captureGroups = Buffer.toArray(captureGroups);
-      }
+      });
     };
 
     private func compileNode(node : Types.ASTNode, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
@@ -292,5 +294,5 @@ module {
     };
       (start, end)
       }
-    };
+    };*/
 }

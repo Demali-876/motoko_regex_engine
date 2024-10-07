@@ -1,31 +1,44 @@
 import Text "mo:base/Text";
 import Char "mo:base/Char";
 module{
-    public type ASTNode = {
-    #Character : Char;
-    #Concatenation : (AST, AST); 
-    #Alternation : (AST, AST); 
-    #Quantifier : (QuantifierType, AST); 
-    #Group : AST;
-    #Metacharacter :MetacharacterType;
-    #CharacterClass : (Bool, [CharacterClass]); 
-    #Anchor : AnchorType;
-  };
   public type AST = {
-    #node : ASTNode;
+    node: ASTNode;
+  };
+  public type ASTNode = {
+    #Character : Char;
+    #Concatenation : [AST];
+    #Alternation : [AST];
+    #Quantifier : {
+        subExpr: AST;
+        min: Nat;
+        max: ?Nat;
+        mode: QuantifierMode;
+    };
+    #Group : {
+        subExpr: AST;
+        modifier: GroupModifierType;
+        captureIndex: ?Nat;
+    };
+    #Metacharacter : MetacharacterType;
+    #CharacterClass : {
+        isNegated: Bool;
+        classes: [CharacterClass]; 
+    };
+    #Anchor : AnchorType;
   };
   public type TokenType = {
     #Character : Char;
     #Metacharacter : MetacharacterType;
     #Quantifier : QuantifierType;
-    #GroupStart;
-    #GroupEnd;
     #GroupModifier : GroupModifierType;
     #CharacterClass : (Bool, [CharacterClass]);
     #Anchor : AnchorType;
     #Alternation;
+    #Group : {
+        modifier: ?GroupModifierType;
+        subTokens: [Token];
+    };
   };
-
   public type MetacharacterType = {
     #Dot;
     #WordChar;

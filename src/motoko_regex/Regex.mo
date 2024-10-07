@@ -10,7 +10,7 @@ actor {
         lexer.tokenize();
     };
 
-    public query func testParser(t: Text): async ?Types.AST {
+    /*public query func testParser(t: Text): async ?Types.AST {
         let lexer = Lexer.Lexer(t);
         let tokenResult = lexer.tokenize();
         let parser = Parser.Parser(tokenResult);
@@ -36,6 +36,6 @@ actor {
                 };
             };
         };
-    };
+    };*/
 };
 
