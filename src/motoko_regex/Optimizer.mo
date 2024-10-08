@@ -5,7 +5,7 @@ import Hash "mo:base/Hash";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
 
-module {
+/* module {
   public class Optimizer() {
     private var epsilonClosureCache = HashMap.HashMap<Types.State, Buffer.Buffer<Types.State>>(10, Nat.equal, Hash.hash);
 
@@ -134,5 +134,5 @@ module {
       stateTransitionsMap
     };
   };
-}
+} */
 

@@ -1,9 +1,7 @@
 import Text "mo:base/Text";
 import Char "mo:base/Char";
 module{
-  public type AST = {
-    node: ASTNode;
-  };
+  public type AST = ASTNode;
   public type ASTNode = {
     #Character : Char;
     #Concatenation : [AST];
@@ -16,7 +14,7 @@ module{
     };
     #Group : {
         subExpr: AST;
-        modifier: GroupModifierType;
+        modifier: ?GroupModifierType;
         captureIndex: ?Nat;
     };
     #Metacharacter : MetacharacterType;
@@ -95,35 +93,40 @@ public type QuantifierType = {
     position : Position;
   };
 
-  public type LexerError = {
-    #UnexpectedCharacter : Char;
-    #UnexpectedEndOfInput;
-    #GenericError :Text;
-    #InvalidQuantifierRange : Text;
-    #InvalidEscapeSequence : Char;
-    #UnmatchedParenthesis : Char;
-    #MismatchedParenthesis : (Char, Char);
-  };
+  public type RegexError = {
+  #UnexpectedCharacter: Char;
+  #UnexpectedEndOfInput;
+  #GenericError: Text;
+  #InvalidQuantifierRange: Text;
+  #InvalidEscapeSequence: Char;
+  #UnmatchedParenthesis: Char;
+  #MismatchedParenthesis: (Char, Char);
+  #UnexpectedToken: TokenType;
+  #UnclosedGroup: Text;
+  #InvalidQuantifier: Text;
+};
 
   public type State = Nat;
-  public type TransitionTable = [(State, Transition, State)];
 
-  public type Transition = {
-    #Char : Char;
-    #Range : (Char, Char);
-    #Any;
-    #Epsilon;
-  };
-
-  public type CompiledRegex = {
-    transitions : TransitionTable;
-    startState : State;
-    acceptStates : [State];
-    captureGroups : [CaptureGroup];
-  };
-
-  public type CaptureGroup = {
+public type Transition = {
+  #Char : Char;
+  #Range : (Char, Char);
+  #Any;
+  #Epsilon;
+  #Group : {
     startState : State;
     endState : State;
+    captureIndex : ?Nat;
   };
+  #Alternation;
+};
+
+
+public type TransitionTable = [(State, Transition, State)];
+
+public type CompiledRegex = {
+  transitions : TransitionTable;
+  startState : State;
+  acceptStates : [State];
+};
 }

@@ -11,7 +11,7 @@ import Cursor "Cursor";
 
 module {
   type Token = Types.Token;
-  type LexerError = Types.LexerError;
+  type LexerError = Types.RegexError;
   type CharacterClass = Types.CharacterClass;
   public class Lexer(input: Text) {
     let cursor = Cursor.Cursor(input);
@@ -194,7 +194,7 @@ module {
     if (not cursor.hasNext()) {
         return #err(#GenericError("Unexpected end of input at position " # Nat.toText(start)));
     };
-    cursor.inc();
+    cursor.inc(); // Consume the opening parenthesis
 
     let groupModifierResult = parseGroupModifier();
     var groupModifier: ?Types.GroupModifierType = null;
@@ -218,7 +218,7 @@ module {
         return #err(#GenericError("Expected closing parenthesis at position " # Nat.toText(cursor.getPos()) # ", found '" # Text.fromChar(cursor.current()) # "'"));
     };
 
-    cursor.inc();
+    cursor.inc(); // Consume the closing parenthesis
 
     let groupToken: Token = {
         tokenType = #Group({
@@ -226,7 +226,7 @@ module {
             subTokens = subTokens;
         });
         value = Extensions.slice(input, start, ?cursor.getPos());
-        position = #Span(start, cursor.getPos() -1);
+        position = #Span(start, cursor.getPos() - 1);
     };
     #ok(groupToken)
 };
@@ -269,9 +269,10 @@ module {
     while (cursor.hasNext() and depth > 0) {
         switch (cursor.current()) {
             case '(' {
-                depth += 1;
                 switch (tokenizeGroup()) {
-                    case (#ok(token)) { subTokens.add(token) };
+                    case (#ok(token)) {
+                        subTokens.add(token);
+                    };
                     case (#err(error)) { return #err(error) };
                 };
             };
@@ -280,7 +281,7 @@ module {
                 if (depth == 0) {
                     return #ok(subTokens);
                 } else {
-                    cursor.inc();
+                    return #ok(subTokens);
                 };
             };
             case _ {
@@ -297,7 +298,7 @@ module {
     };
 
     #ok(subTokens)
-};
+    };
 
     private func tokenizeEscapedChar(): Result.Result<Token, LexerError> {
       cursor.inc();

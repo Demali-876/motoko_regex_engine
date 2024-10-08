@@ -8,291 +8,355 @@ import Extensions "Extensions";
 import Optimizer "Optimizer";
 
 module {
- /* public class Compiler() {
-    private var nextState : Types.State = 0;
-    private var captureGroups = Buffer.Buffer<Types.CaptureGroup>(8);
+ public class Compiler() {
+  type State = Types.State;
+  type NFA = Types.CompiledRegex;
+  type Transition = Types.Transition;
+  type TransitionTable = Types.TransitionTable;
 
-    public func compile(ast : Types.AST) : Types.CompiledRegex {
-      let transitions = Buffer.Buffer<(Types.State, Types.Transition, Types.State)>(16);
-      let (start, end) = switch (ast) {
-        case (#node(node)) compileNode(node, transitions);
-        };
-      let optimizer =  Optimizer.Optimizer();
-      optimizer.optimize(
+    public func compile(ast: Types.ASTNode): NFA {
+      let startState: State = 0;
+      let (transitionTable, acceptStates) = buildNFA(ast, startState);
       {
-        transitions = Buffer.toArray(transitions);
-        startState = start;
-        acceptStates = [end];
-        captureGroups = Buffer.toArray(captureGroups);
-      });
-    };
-
-    private func compileNode(node : Types.ASTNode, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-      switch (node) {
-        case (#Character(char)) compileCharacter(char, transitions);
-        case (#Concatenation(left, right)) compileConcatenation(left, right, transitions);
-        case (#Alternation(left, right)) compileAlternation(left, right, transitions);
-        case (#Quantifier(quantType, subExpr)) compileQuantifier(quantType, subExpr, transitions);
-        case (#Group(subExpr)) compileGroup(subExpr, transitions);
-        case (#CharacterClass(isNegated, classes,)) compileCharacterClass(isNegated, classes, transitions);
-        case (#Anchor(anchorType)) compileAnchor(anchorType, transitions);
-        case (#Metacharacter(metaType)) compileMetacharacter(metaType, transitions);
+        transitions = transitionTable;
+        startState = startState;
+        acceptStates = acceptStates;
       }
     };
 
-    private func compileCharacter(char : Char, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-      let start = nextState;
-      nextState += 1;
-      let end = nextState;
-      nextState += 1;
-      transitions.add((start, #Char(char), end));
-      (start, end)
-    };
+    public func buildNFA(ast: Types.ASTNode, startState: State): (TransitionTable, [State]) {
+      switch (ast) {
 
-    private func compileConcatenation(left : Types.AST, right : Types.AST, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-        let (leftStart, leftEnd) = switch (left) {
-        case (#node(node)) compileNode(node, transitions);
+        case (#Character(char)) {
+          let acceptState: State = startState + 1;
+          let transition: Transition = #Char(char);
+          let transitionTable: TransitionTable = [(startState, transition, acceptState)];
+          (transitionTable, [acceptState]);
         };
-        let (rightStart, rightEnd) = switch (right) {
-        case (#node(node)) compileNode(node, transitions);
-        };
-      transitions.add((leftEnd, #Epsilon, rightStart));
-      (leftStart, rightEnd)
-    };
 
-    private func compileAlternation(left : Types.AST, right : Types.AST, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-      let start = nextState;
-      nextState += 1;
-      let (leftStart, leftEnd) = switch (left) {
-        case (#node(node)) compileNode(node, transitions);
-        };
-        let (rightStart, rightEnd) = switch (right) {
-        case (#node(node)) compileNode(node, transitions);
-        };
-      let end = nextState;
-      nextState += 1;
-      transitions.add((start, #Epsilon, leftStart));
-      transitions.add((start, #Epsilon, rightStart));
-      transitions.add((leftEnd, #Epsilon, end));
-      transitions.add((rightEnd, #Epsilon, end));
-      (start, end)
-    };
+        case (#Concatenation(subExprs)) {
+          var currentStartState: State = startState;
+          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(subExprs.size());
+          var acceptStates: [State] = [];
 
-    private func compileQuantifier(quantType: Types.QuantifierType, subExpr: Types.AST, transitions: Buffer.Buffer<(Types.State, Types.Transition, Types.State)>): (Types.State, Types.State) {
-    let (subStart, subEnd) = switch (subExpr) {
-        case (#node(node)) compileNode(node, transitions);
-    };
-
-    let start = nextState;
-    nextState += 1;
-    let end = nextState;
-    nextState += 1;
-
-    // Destructure the quantifier type
-    let {min; max; mode} = quantType;
-
-    // Handle 'min' repetitions
-    var currentState = start;
-    for (_ in Iter.range(0, min - 1)) {
-        let nextState = getNextState();
-        transitions.add((currentState, #Epsilon, subStart));
-        transitions.add((subEnd, #Epsilon, nextState));
-        currentState := nextState;
-    };
-    // Handle additional repetitions based on the quantifier mode and max value
-    switch (max) {
-        case (null) {  // Infinite upper bound
-            switch (mode) {
-                case (#Greedy) {
-                    transitions.add((currentState, #Epsilon, subStart));
-                    transitions.add((subEnd, #Epsilon, currentState));
-                    transitions.add((currentState, #Epsilon, end));
-                };
-                case (#Lazy) {
-                    transitions.add((currentState, #Epsilon, end));
-                    transitions.add((currentState, #Epsilon, subStart));
-                    transitions.add((subEnd, #Epsilon, currentState));
-                };
-                case (#Possessive) {
-                    transitions.add((currentState, #Epsilon, subStart));
-                    transitions.add((subEnd, #Epsilon, currentState));
-                };
+          for (subExpr in subExprs.vals()) {
+            let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, currentStartState);
+            for ((fromState, transition, toState) in subTransitionTable.vals()) {
+              transitionBuffer.add((fromState, transition, toState));
             };
+            currentStartState := subAcceptStates[0];
+            acceptStates := subAcceptStates;
+          };
+
+          (Buffer.toArray(transitionBuffer), acceptStates);
         };
-        case (?maxVal) {
-            if (maxVal > min) {
-                // Add optional repetitions based on the mode
-                for (_ in Iter.range(0, maxVal - min - 1)) {
-                    let nextState = getNextState();
-                    switch (mode) {
-                        case (#Greedy) {
-                            transitions.add((currentState, #Epsilon, subStart));
-                            transitions.add((currentState, #Epsilon, nextState));
-                            transitions.add((subEnd, #Epsilon, nextState));
-                        };
-                        case (#Lazy) {
-                            transitions.add((currentState, #Epsilon, nextState));
-                            transitions.add((currentState, #Epsilon, subStart));
-                            transitions.add((subEnd, #Epsilon, nextState));
-                        };
-                        case (#Possessive) {
-                            transitions.add((currentState, #Epsilon, subStart));
-                            transitions.add((subEnd, #Epsilon, nextState));
-                        };
-                    };
-                    currentState := nextState;
-                };
+
+        case (#Alternation(subExprs)) {
+          let newStartState: State = startState;
+          let newAcceptState: State = newStartState + subExprs.size() + 1;
+          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(subExprs.size() * 2);
+          var acceptStates: [State] = [newAcceptState];
+
+          for (subExpr in subExprs.vals()) {
+            let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, newStartState + 1);
+            transitionBuffer.add((newStartState, #Epsilon, subTransitionTable[0].0));
+
+            for ((fromState, transition, toState) in subTransitionTable.vals()) {
+              transitionBuffer.add((fromState, transition, toState));
             };
-            transitions.add((currentState, #Epsilon, end));
-        };
-    };
 
-    (start, end)
-};
-
-    private func getNextState() : Types.State {
-      let state = nextState;
-      nextState += 1;
-      state
-    };
-
-
-    private func compileGroup(subExpr : Types.AST, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-      let start = nextState;
-      nextState += 1;
-      let (subStart, subEnd) = switch (subExpr) {
-        case (#node(node)) compileNode(node, transitions);
-        };
-      let end = nextState;
-      nextState += 1;
-      transitions.add((start, #Epsilon, subStart));
-      transitions.add((subEnd, #Epsilon, end));
-      captureGroups.add({ startState = start; endState = end });
-      (start, end)
-    };
-
-    private func compileCharacterClass(isNegated : Bool, classes : [Types.CharacterClass], transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-      let start = nextState;
-      nextState += 1;
-      let end = nextState;
-      nextState += 1;
-      let ranges = Buffer.Buffer<(Char, Char)>(classes.size());
-
-      for (c in classes.vals()) {
-        switch (c) {
-          case (#Single(char)) {
-            ranges.add((char, char));
-          };
-          case (#Range(from, to)) {
-            ranges.add((from, to));
-          };
-          case (#Metacharacter(metaType)) {
-            let metaRanges = Extensions.metacharToRanges(metaType);
-            for (range in metaRanges.vals()) {
-              ranges.add(range);
+            for (acceptState in subAcceptStates.vals()) {
+              transitionBuffer.add((acceptState, #Epsilon, newAcceptState));
             };
           };
-          case (#Quantified(charClass, quantType)) {
-            // Handle quantifiers directly by adding transitions, no need to add to ranges.
-            let _ = compileQuantifier(quantType, #node(#CharacterClass(isNegated, [charClass])), transitions);
+
+          (Buffer.toArray(transitionBuffer), acceptStates);
+        };
+
+       case (#Quantifier { subExpr; min; max; mode }) {
+        let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(10);
+        let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, startState + 1);
+        let quantifierStartState: State = startState;
+        let quantifierAcceptState: State = startState + subTransitionTable.size() + 2;
+
+        // Assign default max value (100) if max is null
+        let maxVal = switch (max) {
+          case (null) 100;
+          case (?value) value;
+        };
+
+        for ((fromState, transition, toState) in subTransitionTable.vals()) {
+          transitionBuffer.add((fromState, transition, toState));
+        };
+
+        if (min == 0 and max == null) {
+          switch (mode) {
+            case (#Greedy) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState)); // Exit loop
+                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState)); // Loop back
+              };
+            };
+            case (#Lazy) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, quantifierAcceptState)); // Match 0 times first
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0)); // Try to match sub-expression
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState)); // Loop back for more matches
+              };
+            };
+            case (#Possessive) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState)); // Exit loop, no backtracking
+              };
+            };
+          };
+        } else if (min == 1 and max == null) {
+          switch (mode) {
+            case (#Greedy) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState));
+                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState));
+              };
+            };
+            case (#Lazy) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              transitionBuffer.add((quantifierStartState, #Epsilon, quantifierAcceptState)); // Try to match 0 times
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState));
+              };
+            };
+            case (#Possessive) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState));
+              };
+            };
+          };
+        } else if (min == 0 and max == ?1) {
+          switch (mode) {
+            case (#Greedy) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState));
+              };
+            };
+            case (#Lazy) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, quantifierAcceptState)); // Match 0 times first
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0)); // Try to match 1 time
+            };
+            case (#Possessive) {
+              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState)); // Exit, no backtracking
+              };
+            };
+          };
+        } else if (min > 0 and max != null) {
+          var currentStartState = quantifierStartState;
+          for (i in Iter.range(0, min - 1)) {
+            let (subTrans, subAcc) = buildNFA(subExpr, currentStartState + 1);
+            for ((fromState, transition, toState) in subTrans.vals()) {
+              transitionBuffer.add((fromState, transition, toState));
+            };
+            currentStartState := subAcc[0];
+          };
+
+          for (i in Iter.range(min, maxVal - 1)) {
+            let (subTrans, subAcc) = buildNFA(subExpr, currentStartState + 1);
+            for ((fromState, transition, toState) in subTrans.vals()) {
+              transitionBuffer.add((fromState, transition, toState));
+            };
+            currentStartState := subAcc[0];
           };
         };
+
+        (Buffer.toArray(transitionBuffer), [quantifierAcceptState]);
       };
 
-      // Sort and merge overlapping ranges
-      let sortedRanges : [(Char, Char)] = Buffer.toArray(ranges);
-      ignore Array.sort<(Char, Char)>(sortedRanges, func(a : (Char, Char), b : (Char, Char)) : Order.Order {
-        Char.compare(a.0, b.0)
-      });
-      let mergedRanges = Buffer.Buffer<(Char, Char)>(sortedRanges.size());
-      for (range in sortedRanges.vals()) {
-        switch (mergedRanges.removeLast()) {
-          case (null) {
-            mergedRanges.add(range);
-          };
-          case (?lastRange) {
-            if (Char.toNat32(range.0) <= Char.toNat32(lastRange.1) + 1) {
-              mergedRanges.add((lastRange.0, Extensions.maxChar(lastRange.1, range.1)));
-            } else {
-              mergedRanges.add(lastRange);
-              mergedRanges.add(range);
+        case (#Group { subExpr; captureIndex; modifier }) {
+          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(10);
+          let groupStartState: State = startState;
+          let groupEndState: State = groupStartState + 1;
+
+          switch (modifier) {
+            case null {
+              let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, groupStartState + 1);
+
+              for ((fromState, transition, toState) in subTransitionTable.vals()) {
+                transitionBuffer.add((fromState, transition, toState));
+              };
+
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, groupEndState));
+              };
+
+              if (captureIndex != null) {
+                transitionBuffer.add((groupStartState, #Group {startState = groupStartState; endState = groupEndState; captureIndex}, groupEndState));
+              };
+
+              (Buffer.toArray(transitionBuffer), [groupEndState]);
+            };
+
+            case (?#NonCapturing) {
+              let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, groupStartState + 1);
+
+              for ((fromState, transition, toState) in subTransitionTable.vals()) {
+                transitionBuffer.add((fromState, transition, toState));
+              };
+
+              for (acceptState in subAcceptStates.vals()) {
+                transitionBuffer.add((acceptState, #Epsilon, groupEndState));
+              };
+
+              (Buffer.toArray(transitionBuffer), [groupEndState]);
+            };
+
+            case (?#PositiveLookahead) {
+              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
+
+              for ((fromState, transition, toState) in subTransitionTable.vals()) {
+                transitionBuffer.add((fromState, transition, toState));
+              };
+
+              (Buffer.toArray(transitionBuffer), [groupStartState]);
+            };
+
+            case (?#NegativeLookahead) {
+              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
+
+              for ((fromState, transition, toState) in subTransitionTable.vals()) {
+                transitionBuffer.add((fromState, transition, toState));
+              };
+
+              (Buffer.toArray(transitionBuffer), [groupStartState]); // Group ends without advancing
+            };
+
+            case (?#PositiveLookbehind) {
+              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
+
+              for ((fromState, transition, toState) in subTransitionTable.vals()) {
+                transitionBuffer.add((fromState, transition, toState));
+              };
+
+              (Buffer.toArray(transitionBuffer), [groupStartState]);
+            };
+
+            case (?#NegativeLookbehind) {
+              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
+
+              for ((fromState, transition, toState) in subTransitionTable.vals()) {
+                transitionBuffer.add((fromState, transition, toState));
+              };
+
+              (Buffer.toArray(transitionBuffer), [groupStartState]);
             };
           };
         };
-      };
 
-      // Add transitions based on merged ranges
-      if (isNegated) {
-        var lastChar : Char = Char.fromNat32(0);
-        for (range in mergedRanges.vals()) {
-          if (Char.toNat32(lastChar) < Char.toNat32(range.0)) {
-            transitions.add((start, #Range(lastChar, Char.fromNat32(Char.toNat32(range.0) - 1)), end));
+        case (#Metacharacter metacharType) {
+          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(1);
+          let acceptState: State = startState + 1;
+          switch (metacharType) {
+            case (#Dot) {
+              transitionBuffer.add((startState, #Any, acceptState));
+            };
+            case (_) {
+              let metaRanges = Extensions.metacharToRanges(metacharType);
+              for (range in metaRanges.vals()) {
+                transitionBuffer.add((startState, #Range(range.0, range.1), acceptState));
+              };
+            };
           };
-          lastChar := Char.fromNat32(Char.toNat32(range.1) + 1);
+          (Buffer.toArray(transitionBuffer), [acceptState]);
         };
-        if (Char.toNat32(lastChar) <= 255) {
-          transitions.add((start, #Range(lastChar, Char.fromNat32(255)), end));
+
+        case (#CharacterClass { isNegated; classes }) {
+          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(classes.size());
+          let acceptState: State = startState + 1;
+          let ranges = Buffer.Buffer<(Char, Char)>(classes.size());
+
+          for (charClass in classes.vals()) {
+            switch (charClass) {
+              case (#Single(char)) {
+                ranges.add((char, char));
+              };
+              case (#Range(from, to)) {
+                ranges.add((from, to));
+              };
+              case (#Metacharacter(metaType)) {
+                let metaRanges = Extensions.metacharToRanges(metaType);
+                for (range in metaRanges.vals()) {
+                  ranges.add(range);
+                };
+              };
+              case (#Quantified(charClass, quantType)) {
+                ignore buildNFA(#Quantifier {
+                  subExpr = #CharacterClass({isNegated = isNegated; classes = [charClass]});
+                  min = quantType.min;
+                  max = quantType.max;
+                  mode = quantType.mode;
+                }, startState);
+              };
+
+            };
+          };
+
+          if (isNegated) {
+            var lastChar: Char = Char.fromNat32(0);
+            let sortedRanges = Buffer.toArray(ranges);
+            ignore Array.sort<(Char, Char)>(sortedRanges, func(a: (Char, Char), b: (Char, Char)) : Order.Order {
+              Char.compare(a.0, b.0)
+            });
+            for (range in sortedRanges.vals()) {
+              if (Char.toNat32(lastChar) < Char.toNat32(range.0)) {
+                transitionBuffer.add((startState, #Range(lastChar, Char.fromNat32(Char.toNat32(range.0) - 1)), acceptState));
+              };
+              lastChar := Char.fromNat32(Char.toNat32(range.1) + 1);
+            };
+            if (Char.toNat32(lastChar) <= 255) {
+              transitionBuffer.add((startState, #Range(lastChar, Char.fromNat32(255)), acceptState));
+            };
+          } else {
+            for (range in ranges.vals()) {
+              transitionBuffer.add((startState, #Range(range.0, range.1), acceptState));
+            };
+          };
+
+          (Buffer.toArray(transitionBuffer), [acceptState]);
         };
-      } else {
-        for (range in mergedRanges.vals()) {
-          transitions.add((start, #Range(range.0, range.1), end));
+
+        case (#Anchor anchorType) {
+          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(1);
+          let acceptState: State = startState + 1;
+          switch (anchorType) {
+            case (#StartOfString) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+            case (#EndOfString) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+            case (#WordBoundary) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+            case (#NonWordBoundary) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+            case (#StartOfStringOnly) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+            case (#EndOfStringOnly) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+            case (#PreviousMatchEnd) {
+              transitionBuffer.add((startState, #Epsilon, acceptState));
+            };
+          };
+          (Buffer.toArray(transitionBuffer), [acceptState]);
         };
-      };
-      (start, end)
+      }
+    };
   };
-
-
-    private func compileAnchor(anchorType : Types.AnchorType, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-    let start = nextState;
-    nextState += 1;
-    let end = nextState;
-    nextState += 1;
-
-    switch (anchorType) {
-        case (#StartOfString) {
-        transitions.add((start, #Epsilon, end));
-        };
-        case (#EndOfString) {
-        transitions.add((start, #Epsilon, end));
-        };
-        case (#WordBoundary) {
-        transitions.add((start, #Epsilon, end));
-        };
-        case (#NonWordBoundary) {
-        transitions.add((start, #Epsilon, end));
-        };
-        case (#StartOfStringOnly) {
-        transitions.add((start, #Epsilon, end));
-        };
-        case (#EndOfStringOnly) {
-        transitions.add((start, #Epsilon, end));
-        };
-        case (#PreviousMatchEnd) {
-        transitions.add((start, #Epsilon, end));
-        };
-    };
-
-    (start, end)
-    };
-
-
-    private func compileMetacharacter(metaType : Types.MetacharacterType, transitions : Buffer.Buffer<(Types.State, Types.Transition, Types.State)>) : (Types.State, Types.State) {
-    let start = nextState;
-    nextState += 1;
-    let end = nextState;
-    nextState += 1;
-    switch (metaType) {
-        case (#Dot) {
-            transitions.add((start, #Any, end));
-        };
-        case (_) {
-            let metaRanges = Extensions.metacharToRanges(metaType);
-            for (range in metaRanges.vals()) {
-                transitions.add((start, #Range(range.0, range.1), end));
-            }
-        };
-    };
-      (start, end)
-      }
-    };*/
-}
+};

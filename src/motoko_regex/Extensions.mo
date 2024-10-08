@@ -150,8 +150,8 @@ module{
     Array.tabulate<T>(end - start, func(i:Nat) { arr[start + i] })
     };
     //Error handling
-    public func errorToText(error : Types.LexerError) : Text {
-      switch (error) {
+    public func errorToText(error: Types.RegexError): Text {
+    switch (error) {
         case (#GenericError(text)) text;
         case (#InvalidEscapeSequence(char)) "Invalid escape sequence: " # Char.toText(char);
         case (#InvalidQuantifierRange(text)) "Invalid quantifier range: " # text;
@@ -159,8 +159,12 @@ module{
         case (#UnexpectedCharacter(char)) "Unexpected character: " # Char.toText(char);
         case (#UnexpectedEndOfInput) "Unexpected end of input";
         case (#UnmatchedParenthesis(char)) "Unmatched parenthesis: " # Char.toText(char);
-      };
+        case (#UnexpectedToken(tokenType)) "Unexpected token: " # debug_show(tokenType);
+        case (#UnclosedGroup(text)) "Unclosed group: " # text;
+        case (#InvalidQuantifier(text)) "Invalid quantifier: " # text;
     };
+    };
+
     //replace an element of a buffer given an index
     public func replace<T>(buffer: Buffer.Buffer<T>, index: Nat, newElement: T) {
     if (index >= buffer.size()) {

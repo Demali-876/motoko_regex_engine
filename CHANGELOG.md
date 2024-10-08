@@ -3,9 +3,11 @@
 ## 🚀 New Features
 
 - **Flattened AST Structure**
-  - Introduced a new, flattened AST structure to simplify regex expression handling. This includes using lists for concatenations and alternations, reducing the depth of nested expressions.
+  - [#420f70a](https://github.com/Demali-876/motoko_regex_engine/commit/420f70a46a0ace335d2be8631b2c372022b8f2f2) **Date: 10-07-2024 | New:** Introduced a new, flattened AST structure to simplify regex expression handling. This includes using lists for concatenations and alternations, reducing the depth of nested expressions.
 - **Single Group Token**
-  - Introduced a unified `#Group` token that now encapsulates the group modifier and sub-expression, streamlining group handling in both the lexer and the parser.
+  - [#420f70a](https://github.com/Demali-876/motoko_regex_engine/commit/420f70a46a0ace335d2be8631b2c372022b8f2f2) **Date: 10-07-2024 | New:** Introduced a unified `#Group` token that now encapsulates the group modifier and sub-expression, streamlining group handling in both the lexer and the parser.
+- **Capture Index Tracking**
+  - Implemented capture group index tracking for pre-matching optimization.
 
 ## 🐛 Bug Fixes
 
@@ -27,26 +29,31 @@
 ## 🔄 Changes
 
 - **Reduced Token Count in Lexer**
-  - Reduced the number of tokens in the lexer by eliminating `#GroupStart` and `#GroupEnd` in favor of a single `#Group` token, simplifying group handling during the parsing process.
+  - [#420f70a](https://github.com/Demali-876/motoko_regex_engine/commit/420f70a46a0ace335d2be8631b2c372022b8f2f2) **Date: 10-07-2024 | Improved:**Reduced the number of tokens in the lexer by eliminating `#GroupStart` and `#GroupEnd` in favor of a single `#Group` token, simplifying group handling during the parsing process.
 - **Unified Group Token**
-  - Removed the standalone `GroupModifierType` token, integrating it into the `#Group` token type.
+  - [#420f70a](https://github.com/Demali-876/motoko_regex_engine/commit/420f70a46a0ace335d2be8631b2c372022b8f2f2) **Date: 10-07-2024 | Improved :** Removed the standalone `GroupModifierType` token, integrating it into the `#Group` token type.
 - **NextToken() Improvements**
-  - Removed redundant cases.
+  - [#420f70a](https://github.com/Demali-876/motoko_regex_engine/commit/420f70a46a0ace335d2be8631b2c372022b8f2f2) **Date: 10-07-2024 | Improved:** Removed redundant cases.
+- **Complete Parser and Compiler Redesign**
+  - Optimized NFA generation using Thompson's Construction Algorithm.
+    - Complete Parser rework using new ast structure.
+    - Introduction of Parser Errors. Parser now produces an AST or an Error.
 
 ## ❌ Removed
 
 - [#6279c34](https://github.com/Demali-876/motoko_regex_engine/commit/6279c34557a50328ac43555533fbf5708f867679) **Date: 10-03-2024 | Removed:** Removed `#QuantifierRange` token. All ranges are now handled by the `#Quantifier` token.
+- []() Eliminated Redundant Tokens
 
 ---
 
 ### **To-Do Checklist**
 
-- [ ] **Parser Overhaul**
-  - [ ] Adapt the parser to utilize the new flattened AST structure.
-  - [ ] Ensure proper handling of the unified `#Group` token, including its modifiers and sub-expression references.
+- [x] **Parser Overhaul | Status: Completed  Date: 10-08-2024** Commit: 
+  - [x] Adapt the parser to utilize the new flattened AST structure.
+  - [x] Ensure proper handling of the unified `#Group` token, including its modifiers and sub-expression references.
 
-- [ ] **NFA Construction**
-  - [ ] Refactor NFA construction to take advantage of the flattened AST for incremental optimization.
+- [x] **NFA Construction | Status: Started Date: 10-08-2024** Commit: 
+  - [x] Refactor NFA construction to take advantage of the flattened AST for incremental optimization.
   - [ ] Implement state reduction and bisimulation in the NFA to prevent state explosion.
 
 - [ ] **Incremental Optimization**

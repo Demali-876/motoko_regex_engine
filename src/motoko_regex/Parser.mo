@@ -1,16 +1,21 @@
-import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Types "Types";
+import Result "mo:base/Result";
 
 module {
-  public class Parser(tokens: [Types.Token]) {
-    var cursor: Nat = 0;
+  public type ParserError = Types.RegexError;
+  public type Token = Types.Token;
+  public type AST = Types.AST;
 
-    public func parse(): ?Types.AST {
+  public class Parser(initialTokens: [Token]) {
+    var tokens = initialTokens;
+    var cursor : Nat = 0;
+    var captureGroupIndex = 1;
+    public func parse(): Result.Result<AST, ParserError> {
       parseAlternation()
     };
 
-     private func parseAlternation(): ?Types.AST {
+    private func parseAlternation(): Result.Result<AST, ParserError> {
       var left = parseConcatenation();
       label l while (cursor < tokens.size()) {
         switch (peekToken()) {
@@ -18,16 +23,19 @@ module {
             if (token.tokenType == #Alternation) {
               ignore advanceCursor();
               switch (parseConcatenation()) {
-                case (?right) {
+                case (#ok(right)) {
                   switch (left) {
-                    case (?l) {
-                      left := ?#node(#Alternation(l, right));
-
+                    case (#ok(l)) {
+                      left := #ok(#Alternation([l, right]));
                     };
-                    case null { break l; };
+                    case (#err(error)) {
+                      return #err(error);
+                    };
                   };
                 };
-                case (null) { break l; };
+                case (#err(error)) {
+                  return #err(error);
+                };
               };
             } else { break l; };
           };
@@ -37,22 +45,26 @@ module {
       left
     };
 
-    private func parseConcatenation(): ?Types.AST {
+    private func parseConcatenation(): Result.Result<AST, ParserError> {
       var left = parseQuantifier();
       label l while (cursor < tokens.size()) {
         switch (peekToken()) {
           case (?token) {
-            if (token.tokenType != #Alternation and token.tokenType != #GroupEnd) {
+            if (token.tokenType != #Alternation) {
               switch (parseQuantifier()) {
-                case (?right) {
+                case (#ok(right)) {
                   switch (left) {
-                    case (?l) {
-                      left := ?#node(#Concatenation(l, right));
+                    case (#ok(l)) {
+                      left := #ok(#Concatenation([l, right]));
                     };
-                    case null { break l; };
+                    case (#err(error)) {
+                      return #err(error);
+                    };
                   };
                 };
-                case (null) { break l; };
+                case (#err(error)) {
+                  return #err(error);
+                };
               };
             } else { break l; };
           };
@@ -62,88 +74,121 @@ module {
       left
     };
 
-    private func parseQuantifier(): ?Types.AST {
+    private func parseQuantifier(): Result.Result<AST, ParserError> {
       var node = parsePrimary();
 
       if (cursor < tokens.size()) {
-          switch (peekToken()) {
-              case (?token) {
-                  switch (token.tokenType) {
-                      case (#Quantifier(quantType)) {
-                          ignore advanceCursor();
-                          switch (node) {
-                              case (?n) {
-                                  node := ?#node(#Quantifier(quantType, n));
-                              };
-                              case null {};
-                          };
-                      };
-                      case (_) {};
+        switch (peekToken()) {
+          case (?token) {
+            switch (token.tokenType) {
+              case (#Quantifier(quantType)) {
+                ignore advanceCursor();
+                switch (node) {
+                  case (#ok(n)) {
+                    node := #ok(#Quantifier({
+                      subExpr = n;
+                      min = quantType.min;
+                      max = quantType.max;
+                      mode = quantType.mode;
+                    }));
                   };
+                  case (#err(error)) {
+                    return #err(error);
+                  };
+                };
               };
-              case (null) {};
+              case (_) {};
+            };
           };
+          case (null) {};
+        };
       };
       node
-  };
+    };
 
-  private func parsePrimary(): ?Types.AST {
+   private func parsePrimary(): Result.Result<AST, ParserError> {
       switch (advanceCursor()) {
         case (?token) {
           switch (token.tokenType) {
             case (#Character(char)) {
-              ?#node(#Character(char));
+              #ok(#Character(char));
             };
-            case (#GroupStart) {
-              switch (parseAlternation()) {
-                case (?groupNode) {
-                  switch (expectToken(#GroupEnd)) {
-                    case (?_) {
-                      ?#node(#Group(groupNode));
+            case (#Group(groupData)) {
+              // Determine if this is a capturing group
+              let isCapturing = switch (groupData.modifier) {
+                case (?#NonCapturing) { false };
+                case (_) { true };
+              };
+              // Assign capture index for capturing groups
+              let currentCaptureIndex = if (isCapturing) {
+                let index = captureGroupIndex;
+                captureGroupIndex += 1;  // Increment for the next capturing group
+                ?index;
+              } else {
+                null;
+              };
+
+              switch (parseGroup(groupData)) {
+                case (#ok(groupNode)) {
+                  #ok(#Group({
+                    subExpr = groupNode;
+                    modifier = switch (groupData.modifier) {
+                      case (?mod) { ?mod };
+                      case (null) {
+                        if (isCapturing) { null } else { ?#NonCapturing };
+                      };
                     };
-                    case null { null };
-                  };
+                    captureIndex = currentCaptureIndex;
+                  }));
                 };
-                case (null) { null };
+                case (#err(error)) {
+                  #err(error);
+                };
               };
             };
             case (#CharacterClass(isNegated, classes)) {
-              ?#node (#CharacterClass(isNegated, classes)); 
+              #ok(#CharacterClass({
+                isNegated = isNegated;
+                classes = classes;
+              }));
             };
             case (#Anchor(anchorType)) {
-              ?#node(#Anchor(anchorType));
+              #ok(#Anchor(anchorType));
             };
             case (#Metacharacter(metaType)) {
-              ?#node (#Metacharacter(metaType));
+              #ok(#Metacharacter(metaType));
             };
             case (_) {
-              Debug.print("Unexpected token: " # debug_show(token.tokenType));
-              null
+              #err(#GenericError("Unexpected token: " # debug_show(token.tokenType)));
             };
-          };
-        };
-        case (null) { null };
-      }
-    };
-
-    private func expectToken(expectedType: Types.TokenType): ?Types.Token {
-      switch (advanceCursor()) {
-        case (?token) {
-          if (token.tokenType != expectedType) {
-            Debug.print("Expected " # debug_show(expectedType) # " but found " # debug_show(token.tokenType));
-            null
-          } else {
-            ?token
           };
         };
         case (null) {
-          Debug.print("Unexpected end of input");
-          null
+          #err(#UnexpectedEndOfInput);
         };
-      }
+      };
     };
 
-    private func peekToken(): ?Types.Token {
+    private func parseGroup(groupData: {modifier: ?Types.GroupModifierType; subTokens: [Token]}): Result.Result<AST, ParserError> {
+      // Save current state
+      let savedTokens = tokens;
+      let savedCursor = cursor;
+
+      // Set new state for parsing the group
+      tokens := groupData.subTokens;
+      cursor := 0;
+
+      // Parse the group
+      let result = parseAlternation();
+
+      // Restore previous state
+      tokens := savedTokens;
+      cursor := savedCursor;
+
+      result
+    };
+
+    private func peekToken(): ?Token {
       if (cursor < tokens.size()) {
         ?tokens[cursor]
       } else {
@@ -151,7 +196,7 @@ module {
       }
     };
 
-    private func advanceCursor(): ?Types.Token {
+    private func advanceCursor(): ?Token {
       if (cursor < tokens.size()) {
         let token = tokens[cursor];
         cursor += 1;
