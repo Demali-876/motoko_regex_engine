@@ -7,7 +7,7 @@
 - **Single Group Token**
   - [#420f70a](https://github.com/Demali-876/motoko_regex_engine/commit/420f70a46a0ace335d2be8631b2c372022b8f2f2) **Date: 10-07-2024 | New:** Introduced a unified `#Group` token that now encapsulates the group modifier and sub-expression, streamlining group handling in both the lexer and the parser.
 - **Capture Index Tracking**
-  - Implemented capture group index tracking for pre-matching optimization.
+  - [#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587) Implemented capture group index tracking for pre-matching optimization.
 
 ## 🐛 Bug Fixes
 
@@ -42,17 +42,17 @@
 ## ❌ Removed
 
 - [#6279c34](https://github.com/Demali-876/motoko_regex_engine/commit/6279c34557a50328ac43555533fbf5708f867679) **Date: 10-03-2024 | Removed:** Removed `#QuantifierRange` token. All ranges are now handled by the `#Quantifier` token.
-- []() Eliminated Redundant Tokens
+- [#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587) Eliminated Redundant Tokens
 
 ---
 
 ### **To-Do Checklist**
 
-- [x] **Parser Overhaul | Status: Completed  Date: 10-08-2024** Commit: 
+- [x] **Parser Overhaul | Status: Completed | Date: 10-08-2024** Commit:[#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587)  
   - [x] Adapt the parser to utilize the new flattened AST structure.
   - [x] Ensure proper handling of the unified `#Group` token, including its modifiers and sub-expression references.
 
-- [x] **NFA Construction | Status: Started Date: 10-08-2024** Commit: 
+- [x] **NFA Construction | Status: Started | Date: 10-08-2024** Commit: [#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587)
   - [x] Refactor NFA construction to take advantage of the flattened AST for incremental optimization.
   - [ ] Implement state reduction and bisimulation in the NFA to prevent state explosion.
 
