@@ -1,0 +1,10 @@
+[package]
+name = "Regex"
+version = "1.0.0"
+description = "Open source motoko regex engine for pattern matching on the Internet Computer."
+repository = "https://github.com/Demali-876/motoko_regex_engine"
+keywords = [ "regex", "engine", "pattern" ]
+license = "MIT"
+
+[dependencies]
+lrucache = "1.0.0"
