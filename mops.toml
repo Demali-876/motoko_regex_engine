@@ -8,3 +8,8 @@ license = "MIT"
 
 [dependencies]
 lrucache = "1.0.0"
+
+[toolchain]
+moc = "0.13.2"
+wasmtime = "26.0.0"
+pocket-ic = "1.0.0"
