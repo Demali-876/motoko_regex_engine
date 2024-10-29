@@ -4,359 +4,323 @@ import Order "mo:base/Order";
 import Iter "mo:base/Iter";
 import Char "mo:base/Char";
 import Array "mo:base/Array";
+import Int "mo:base/Int";
+import Option "mo:base/Option";
+import Nat "mo:base/Nat";
+import Result "mo:base/Result";
 import Extensions "Extensions";
+import Set "Extensions";
 import Optimizer "Optimizer";
 
 module {
- public class Compiler() {
-  type State = Types.State;
-  type NFA = Types.CompiledRegex;
-  type Transition = Types.Transition;
-  type TransitionTable = Types.TransitionTable;
+  public class Compiler() {
 
-    public func compile(ast: Types.ASTNode): NFA {
-      let startState: State = 0;
-      let (transitionTable, acceptStates) = buildNFA(ast, startState);
-      {
-        transitions = transitionTable;
-        startState = startState;
-        acceptStates = acceptStates;
-      }
+    type State = Types.State;
+    type AST = Types.AST;
+    type LabeledASTNode = Types.LabeledASTNode;
+    type ASTNode = Types.ASTNode;
+    type NFA = Types.CompiledRegex;
+    type Transition = Types.Transition;
+    type TransitionTable = Types.TransitionTable;
+    type CompilerError = Types.RegexError;
+
+    public type NullableFirstLast = {
+      nullable: Bool;
+      firstSet: Set.Set<Nat>;
+      lastSet: Set.Set<Nat>;
     };
 
-    public func buildNFA(ast: Types.ASTNode, startState: State): (TransitionTable, [State]) {
-      switch (ast) {
+    private var nextLabel = 0;
+    func getnextLabel() : Nat {
+      nextLabel += 1;
+      nextLabel;
+    };
 
-        case (#Character(char)) {
-          let acceptState: State = startState + 1;
-          let transition: Transition = #Char(char);
-          let transitionTable: TransitionTable = [(startState, transition, acceptState)];
-          (transitionTable, [acceptState]);
-        };
-
-        case (#Concatenation(subExprs)) {
-          var currentStartState: State = startState;
-          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(subExprs.size());
-          var acceptStates: [State] = [];
-
-          for (subExpr in subExprs.vals()) {
-            let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, currentStartState);
-            for ((fromState, transition, toState) in subTransitionTable.vals()) {
-              transitionBuffer.add((fromState, transition, toState));
-            };
-            currentStartState := subAcceptStates[0];
-            acceptStates := subAcceptStates;
+    // Label the AST nodes recursively
+    public func labelAST(ast: AST): LabeledASTNode {
+      func labelNode(node: AST): LabeledASTNode {
+        switch (node) {
+          case (#Character(c)) {
+            let nlabel = getnextLabel();
+            { nlabel = ?nlabel; node = #Character(c) };
           };
-
-          (Buffer.toArray(transitionBuffer), acceptStates);
-        };
-
-        case (#Alternation(subExprs)) {
-          let newStartState: State = startState;
-          let newAcceptState: State = newStartState + subExprs.size() + 1;
-          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(subExprs.size() * 2);
-          var acceptStates: [State] = [newAcceptState];
-
-          for (subExpr in subExprs.vals()) {
-            let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, newStartState + 1);
-            transitionBuffer.add((newStartState, #Epsilon, subTransitionTable[0].0));
-
-            for ((fromState, transition, toState) in subTransitionTable.vals()) {
-              transitionBuffer.add((fromState, transition, toState));
-            };
-
-            for (acceptState in subAcceptStates.vals()) {
-              transitionBuffer.add((acceptState, #Epsilon, newAcceptState));
-            };
+          case (#Range(start, end)) {
+            let nlabel = getnextLabel();
+            { nlabel = ?nlabel; node = #Range(start, end) };
           };
-
-          (Buffer.toArray(transitionBuffer), acceptStates);
-        };
-
-       case (#Quantifier { subExpr; min; max; mode }) {
-        let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(10);
-        let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, startState + 1);
-        let quantifierStartState: State = startState;
-        let quantifierAcceptState: State = startState + subTransitionTable.size() + 2;
-
-        // Assign default max value (100) if max is null
-        let maxVal = switch (max) {
-          case (null) 100;
-          case (?value) value;
-        };
-
-        for ((fromState, transition, toState) in subTransitionTable.vals()) {
-          transitionBuffer.add((fromState, transition, toState));
-        };
-
-        if (min == 0 and max == null) {
-          switch (mode) {
-            case (#Greedy) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState)); // Exit loop
-                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState)); // Loop back
-              };
-            };
-            case (#Lazy) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, quantifierAcceptState)); // Match 0 times first
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0)); // Try to match sub-expression
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState)); // Loop back for more matches
-              };
-            };
-            case (#Possessive) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState)); // Exit loop, no backtracking
-              };
-            };
+          case (#Metacharacter(m)) {
+            let nlabel = getnextLabel();
+            { nlabel = ?nlabel; node = #Metacharacter(m) };
           };
-        } else if (min == 1 and max == null) {
-          switch (mode) {
-            case (#Greedy) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState));
-                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState));
-              };
-            };
-            case (#Lazy) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              transitionBuffer.add((quantifierStartState, #Epsilon, quantifierAcceptState)); // Try to match 0 times
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierStartState));
-              };
-            };
-            case (#Possessive) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState));
-              };
-            };
+          case (#Anchor(a)) {
+            { nlabel = null; node = #Anchor(a) };
           };
-        } else if (min == 0 and max == ?1) {
-          switch (mode) {
-            case (#Greedy) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState));
-              };
-            };
-            case (#Lazy) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, quantifierAcceptState)); // Match 0 times first
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0)); // Try to match 1 time
-            };
-            case (#Possessive) {
-              transitionBuffer.add((quantifierStartState, #Epsilon, subTransitionTable[0].0));
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, quantifierAcceptState)); // Exit, no backtracking
-              };
-            };
+          case (#Concatenation(nodes)) {
+            let labeledChildren = Array.map<AST, LabeledASTNode>(nodes, labelNode);
+            { nlabel = null; node = #Concatenation(labeledChildren) };
           };
-        } else if (min > 0 and max != null) {
-          var currentStartState = quantifierStartState;
-          for (i in Iter.range(0, min - 1)) {
-            let (subTrans, subAcc) = buildNFA(subExpr, currentStartState + 1);
-            for ((fromState, transition, toState) in subTrans.vals()) {
-              transitionBuffer.add((fromState, transition, toState));
-            };
-            currentStartState := subAcc[0];
+          case (#Alternation(nodes)) {
+            let labeledChildren = Array.map<AST, LabeledASTNode>(nodes, labelNode);
+            { nlabel = null; node = #Alternation(labeledChildren) };
           };
-
-          for (i in Iter.range(min, maxVal - 1)) {
-            let (subTrans, subAcc) = buildNFA(subExpr, currentStartState + 1);
-            for ((fromState, transition, toState) in subTrans.vals()) {
-              transitionBuffer.add((fromState, transition, toState));
-            };
-            currentStartState := subAcc[0];
+          case (#Quantifier({ subExpr; quantifier })) {
+            let labeledSubExpr = labelNode(subExpr);
+            { nlabel = null; node = #Quantifier({ subExpr = labeledSubExpr; quantifier = quantifier }) };
           };
-        };
-
-        (Buffer.toArray(transitionBuffer), [quantifierAcceptState]);
+          case (#Group({ subExpr; modifier; captureIndex })) {
+            let labeledSubExpr = labelNode(subExpr);
+            { nlabel = null; node = #Group({ subExpr = labeledSubExpr; modifier = modifier; captureIndex = captureIndex }) };
+          };
+          case (#CharacterClass({ isNegated; classes })) {
+            let labeledClasses = Array.map<AST, LabeledASTNode>(classes, labelNode);
+            { nlabel = null; node = #CharacterClass({ isNegated = isNegated; classes = labeledClasses }) };
+          };
+        }
       };
+      labelNode(ast);
+    };
 
-        case (#Group { subExpr; captureIndex; modifier }) {
-          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(10);
-          let groupStartState: State = startState;
-          let groupEndState: State = groupStartState + 1;
+    // Compute Nullable, First, and Last Sets
+    public func computeNullableFirstLast(ast: LabeledASTNode): NullableFirstLast {
+      var firstSet = Set.Set<Nat>(Int.hash, Nat.equal);
+      var lastSet = Set.Set<Nat>(Int.hash, Nat.equal);
 
-          switch (modifier) {
-            case null {
-              let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, groupStartState + 1);
-
-              for ((fromState, transition, toState) in subTransitionTable.vals()) {
-                transitionBuffer.add((fromState, transition, toState));
-              };
-
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, groupEndState));
-              };
-
-              if (captureIndex != null) {
-                transitionBuffer.add((groupStartState, #Group {startState = groupStartState; endState = groupEndState; captureIndex}, groupEndState));
-              };
-
-              (Buffer.toArray(transitionBuffer), [groupEndState]);
-            };
-
-            case (?#NonCapturing) {
-              let (subTransitionTable, subAcceptStates) = buildNFA(subExpr, groupStartState + 1);
-
-              for ((fromState, transition, toState) in subTransitionTable.vals()) {
-                transitionBuffer.add((fromState, transition, toState));
-              };
-
-              for (acceptState in subAcceptStates.vals()) {
-                transitionBuffer.add((acceptState, #Epsilon, groupEndState));
-              };
-
-              (Buffer.toArray(transitionBuffer), [groupEndState]);
-            };
-
-            case (?#PositiveLookahead) {
-              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
-
-              for ((fromState, transition, toState) in subTransitionTable.vals()) {
-                transitionBuffer.add((fromState, transition, toState));
-              };
-
-              (Buffer.toArray(transitionBuffer), [groupStartState]);
-            };
-
-            case (?#NegativeLookahead) {
-              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
-
-              for ((fromState, transition, toState) in subTransitionTable.vals()) {
-                transitionBuffer.add((fromState, transition, toState));
-              };
-
-              (Buffer.toArray(transitionBuffer), [groupStartState]); // Group ends without advancing
-            };
-
-            case (?#PositiveLookbehind) {
-              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
-
-              for ((fromState, transition, toState) in subTransitionTable.vals()) {
-                transitionBuffer.add((fromState, transition, toState));
-              };
-
-              (Buffer.toArray(transitionBuffer), [groupStartState]);
-            };
-
-            case (?#NegativeLookbehind) {
-              let (subTransitionTable, _) = buildNFA(subExpr, groupStartState);
-
-              for ((fromState, transition, toState) in subTransitionTable.vals()) {
-                transitionBuffer.add((fromState, transition, toState));
-              };
-
-              (Buffer.toArray(transitionBuffer), [groupStartState]);
-            };
+      switch (ast.node) {
+        case (#Character(_) or #Range(_, _) or #Metacharacter(_) or #Anchor(_)) {
+          if (ast.nlabel != null) {
+            let nlabel = Option.get<Nat>(ast.nlabel,0);
+            firstSet.add(nlabel);
+            lastSet.add(nlabel);
+          };
+          {
+            nullable = false;
+            firstSet = firstSet;
+            lastSet = lastSet;
           };
         };
 
-        case (#Metacharacter metacharType) {
-          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(1);
-          let acceptState: State = startState + 1;
-          switch (metacharType) {
-            case (#Dot) {
-              transitionBuffer.add((startState, #Any, acceptState));
-            };
-            case (_) {
-              let metaRanges = Extensions.metacharToRanges(metacharType);
-              for (range in metaRanges.vals()) {
-                transitionBuffer.add((startState, #Range(range.0, range.1), acceptState));
-              };
+        case (#Concatenation(nodes)) {
+          var nullable = true;
+
+          // First Set
+          label l for (i in Iter.range(0, nodes.size() - 1)) {
+            let subExpr = nodes[i];
+            let subResult = computeNullableFirstLast(subExpr);
+            firstSet := firstSet.union(subResult.firstSet);
+            if (not subResult.nullable) {
+              nullable := false;
+              break l;
             };
           };
-          (Buffer.toArray(transitionBuffer), [acceptState]);
+
+          // Last Set
+          nullable := true;
+          label ll for (i in Iter.range(nodes.size() - 1, 0)) {
+            let subExpr = nodes[i];
+            let subResult = computeNullableFirstLast(subExpr);
+            lastSet := lastSet.union(subResult.lastSet);
+            if (not subResult.nullable) {
+              nullable := false;
+              break ll;
+            };
+          };
+
+          // Overall Nullable
+          nullable := true;
+          for (subExpr in nodes.vals()) {
+            let subResult = computeNullableFirstLast(subExpr);
+            nullable := nullable and subResult.nullable;
+          };
+
+          {
+            nullable = nullable;
+            firstSet = firstSet;
+            lastSet = lastSet;
+          };
         };
 
-        case (#CharacterClass { isNegated; classes }) {
-          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(classes.size());
-          let acceptState: State = startState + 1;
-          let ranges = Buffer.Buffer<(Char, Char)>(classes.size());
-
-          for (charClass in classes.vals()) {
-            switch (charClass) {
-              case (#Single(char)) {
-                ranges.add((char, char));
-              };
-              case (#Range(from, to)) {
-                ranges.add((from, to));
-              };
-              case (#Metacharacter(metaType)) {
-                let metaRanges = Extensions.metacharToRanges(metaType);
-                for (range in metaRanges.vals()) {
-                  ranges.add(range);
-                };
-              };
-              case (#Quantified(charClass, quantType)) {
-                ignore buildNFA(#Quantifier {
-                  subExpr = #CharacterClass({isNegated = isNegated; classes = [charClass]});
-                  min = quantType.min;
-                  max = quantType.max;
-                  mode = quantType.mode;
-                }, startState);
-              };
-
-            };
+        case (#Alternation(nodes)) {
+          var nullable = false;
+          for (subExpr in nodes.vals()) {
+            let subResult = computeNullableFirstLast(subExpr);
+            nullable := nullable or subResult.nullable;
+            firstSet := firstSet.union(subResult.firstSet);
+            lastSet := lastSet.union(subResult.lastSet);
           };
-
-          if (isNegated) {
-            var lastChar: Char = Char.fromNat32(0);
-            let sortedRanges = Buffer.toArray(ranges);
-            ignore Array.sort<(Char, Char)>(sortedRanges, func(a: (Char, Char), b: (Char, Char)) : Order.Order {
-              Char.compare(a.0, b.0)
-            });
-            for (range in sortedRanges.vals()) {
-              if (Char.toNat32(lastChar) < Char.toNat32(range.0)) {
-                transitionBuffer.add((startState, #Range(lastChar, Char.fromNat32(Char.toNat32(range.0) - 1)), acceptState));
-              };
-              lastChar := Char.fromNat32(Char.toNat32(range.1) + 1);
-            };
-            if (Char.toNat32(lastChar) <= 255) {
-              transitionBuffer.add((startState, #Range(lastChar, Char.fromNat32(255)), acceptState));
-            };
-          } else {
-            for (range in ranges.vals()) {
-              transitionBuffer.add((startState, #Range(range.0, range.1), acceptState));
-            };
+          {
+            nullable = nullable;
+            firstSet = firstSet;
+            lastSet = lastSet;
           };
-
-          (Buffer.toArray(transitionBuffer), [acceptState]);
         };
 
-        case (#Anchor anchorType) {
-          let transitionBuffer = Buffer.Buffer<(State, Transition, State)>(1);
-          let acceptState: State = startState + 1;
-          switch (anchorType) {
-            case (#StartOfString) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
-            };
-            case (#EndOfString) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
-            };
-            case (#WordBoundary) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
-            };
-            case (#NonWordBoundary) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
-            };
-            case (#StartOfStringOnly) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
-            };
-            case (#EndOfStringOnly) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
-            };
-            case (#PreviousMatchEnd) {
-              transitionBuffer.add((startState, #Epsilon, acceptState));
+        case (#Quantifier({ subExpr; quantifier })) {
+          let subResult = computeNullableFirstLast(subExpr);
+          var nullable = false;
+
+          // Quantifier logic based on min and max
+          switch (quantifier) {
+            case ({ min; max = _ ; mode = _ ; }) {
+              if (min == 0) {
+                nullable := true;
+              } else {
+                nullable := subResult.nullable;
+              };
             };
           };
-          (Buffer.toArray(transitionBuffer), [acceptState]);
+
+          {
+            nullable = nullable;
+            firstSet = subResult.firstSet;
+            lastSet = subResult.lastSet;
+          };
+        };
+
+        case (#Group({ subExpr; modifier = _; captureIndex = _ ; })) {
+          let subResult = computeNullableFirstLast(subExpr);
+          {
+            nullable = subResult.nullable;
+            firstSet = subResult.firstSet;
+            lastSet = subResult.lastSet;
+          };
+        };
+
+        case (#CharacterClass({ isNegated = _; classes })) {
+          var nullable = false;
+          for (cls in classes.vals()) {
+            let subResult = computeNullableFirstLast(cls);
+            nullable := nullable or subResult.nullable;
+            firstSet := firstSet.union(subResult.firstSet);
+            lastSet := lastSet.union(subResult.lastSet);
+          };
+          {
+            nullable = nullable;
+            firstSet = firstSet;
+            lastSet = lastSet;
+          };
         };
       }
+    };
+    public func constructNFA(ast: LabeledASTNode): NFA {
+      let nfl = computeNullableFirstLast(ast);
+      let states = Set.Set<Nat>(Int.hash, Nat.equal);
+      let transitions = Buffer.Buffer<(State, Transition, State)>(0);
+
+      states.add(0);
+      func addCharTransitions(from: State, to: State, node: LabeledASTNode) {
+        switch (node.node) {
+          case (#Character(c)) { transitions.add((from, #Char(c), to)); };
+          case (#Range(start, end)) { transitions.add((from, #Range(start, end), to)); };
+          case (#Metacharacter(_)) { transitions.add((from, #Any, to)); };
+          case (#CharacterClass({ isNegated =_; classes })) {
+            for (cls in classes.vals()) {
+              addCharTransitions(from, to, cls);
+            };
+          };
+          case _ {}  // Other cases don't add character transitions
+        };
+      };
+      for (pos in nfl.firstSet.toIter()) {
+        addCharTransitions(0, pos, ast);
+        states.add(pos);
+      };
+      
+      // Add transitions between positions
+      func addTransitions(node: LabeledASTNode) {
+        switch (node.node) {
+          case (#Character(c)) {
+            if (node.nlabel != null) {
+              let nlabel = Option.get<Nat>(node.nlabel, 0);
+              transitions.add((nlabel, #Char(c), nlabel));
+            };
+          };
+          case (#Range(start, end)) {
+            if (node.nlabel != null) {
+              let nlabel = Option.get<Nat>(node.nlabel, 0);
+              transitions.add((nlabel, #Range(start, end), nlabel));
+            };
+          };
+          case (#Metacharacter(_)) {
+            if (node.nlabel != null) {
+              let nlabel = Option.get<Nat>(node.nlabel, 0);
+              transitions.add((nlabel, #Any, nlabel));
+            };
+          };
+          case (#Anchor(_)) {
+            // Anchors don't add transitions in Glushkov's construction
+          };
+          case (#Concatenation(nodes)) {
+            for (i in Iter.range(0, nodes.size() - 2)) {
+              let current = computeNullableFirstLast(nodes[i]);
+              let next = computeNullableFirstLast(nodes[i+1]);
+              for (from in current.lastSet.toIter()) {
+                for (to in next.firstSet.toIter()) {
+                  addCharTransitions(from, to, nodes[i+1]);
+                };
+              };
+            };
+            for (subNode in nodes.vals()) { addTransitions(subNode); };
+          };
+          case (#Alternation(nodes)) {
+            for (subNode in nodes.vals()) { addTransitions(subNode); };
+          };
+          case (#Quantifier({ subExpr; quantifier })) {
+            addTransitions(subExpr);
+            let subNFL = computeNullableFirstLast(subExpr);
+            switch (quantifier) {
+              case ({ min = _; max = null; mode = _ }) {
+                for (from in subNFL.lastSet.toIter()) {
+                  for (to in subNFL.firstSet.toIter()) {
+                    addCharTransitions(from, to, subExpr);
+                  };
+                };
+              };
+              case _ {}  
+            };
+          };
+          case (#Group({ subExpr; modifier = _; captureIndex })) {
+            addTransitions(subExpr);
+            let subNFL = computeNullableFirstLast(subExpr);
+            transitions.add((
+              Option.get(node.nlabel, 0), 
+              #Group({ 
+                startState = Option.get(subExpr.nlabel, 0); 
+                endState = subNFL.lastSet.toArray()[subNFL.lastSet.toArray().size()-1];
+                captureIndex = captureIndex 
+              }), 
+              subNFL.lastSet.toArray()[subNFL.lastSet.toArray().size()-1]
+            ));
+          };
+          case (#CharacterClass({ isNegated = _; classes })) {
+            for (cls in classes.vals()) { addTransitions(cls); };
+          };
+        };
+      };
+      addTransitions(ast);
+      // Add final states
+      let finalStates : Set.Set<Nat> = switch (nfl.nullable) {
+      case (true) { 
+        let tempSet = Set.Set<Nat>(Int.hash, Nat.equal).union(nfl.lastSet);
+        tempSet.add(0);
+        tempSet;
+      };
+      case (false) { nfl.lastSet };
+    };
+      // Add all states to the set
+      for ((from, _, to) in transitions.vals()) {
+        states.add(from);
+        states.add(to);
+      };
+      return {
+        states = states.toArray();
+        startState = 0;
+        acceptStates = finalStates.toArray();
+        transitions = Buffer.toArray(transitions);
+      }
+    };
+    public func compile(ast: AST): NFA {
+        let labeledAST = labelAST(ast);
+        constructNFA(labeledAST);
     };
   };
 };

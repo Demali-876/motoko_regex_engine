@@ -29,46 +29,57 @@ module {
 
     private func nextToken(): Result.Result<Token, LexerError> {
       switch (cursor.current()) {
-          case (char) {
-              let token = switch char {
-                  case '.' { createToken(#Metacharacter(#Dot), ".") };
-                  case '*' { tokenizeQuantifier(0, null) };
-                  case '+' { tokenizeQuantifier(1, null) };
-                  case '?' { tokenizeQuantifier(0, ?1) };
-                  case '(' {
-                    switch (tokenizeGroup()) {
-                        case (#ok(token)) { return #ok(token); };
-                        case (#err(error)) { return #err(error); };
-                    };
-                  };
-                  case '[' { tokenizeCharacterClass() };
-                  case '^' {
-                      if (cursor.getPos() == 0) {
-                          createToken(#Anchor(#StartOfString), "^")
-                      } else {
-                          createToken(#Character(char), Text.fromChar(char))
-                      }
-                  };
-                  case '$' { createToken(#Anchor(#EndOfString), "$") };
-                  case '|' { createToken(#Alternation, "|") };
-                  case '\\' { tokenizeEscapedChar() };
-                  case '{' {
-                      if (tokenBuffer.size() > 0) {
-                          return tokenizeQuantifierRange();
-                      } else {
-                          return #err(#GenericError("Quantifier range must follow a valid token at position " # Nat.toText(cursor.getPos())));
-                      }
-                  };
-                  case _ { createToken(#Character(char), Text.fromChar(char)) };
+        case (char) {
+          let token = switch char {
+            case '.' { createToken(#Metacharacter(#Dot), ".") };
+            case '*' { tokenizeQuantifier(0, null) };
+            case '+' { tokenizeQuantifier(1, null) };
+            case '?' { tokenizeQuantifier(0, ?1) };
+            case '(' {
+              switch (tokenizeGroup()) {
+                case (#ok(token)) { 
+                  let quantifiedToken = checkAndApplyQuantifier(token);
+                  return quantifiedToken;
+                };
+                case (#err(error)) { return #err(error) };
               };
-              switch (token) {
-                  case (#ok(_)) { cursor.inc() };
-                  case (#err(_)) { };
+            };
+            case '[' { 
+              switch (tokenizeCharacterClass()) {
+                case (#ok(token)) {
+                  let quantifiedToken = checkAndApplyQuantifier(token);
+                  return quantifiedToken;
+                };
+                case (#err(error)) { return #err(error) };
               };
-              token
+            };
+            case '^' {
+              if (cursor.getPos() == 0) {
+                createToken(#Anchor(#StartOfString), "^")
+              } else {
+                createToken(#Character(char), Text.fromChar(char))
+              }
+            };
+            case '$' { createToken(#Anchor(#EndOfString), "$") };
+            case '|' { createToken(#Alternation, "|") };
+            case '\\' { tokenizeEscapedChar() };
+            case '{' {
+              if (tokenBuffer.size() > 0) {
+                return tokenizeQuantifierRange();
+              } else {
+                return #err(#GenericError("Quantifier range must follow a valid token at position " # Nat.toText(cursor.getPos())));
+              }
+            };
+            case _ { createToken(#Character(char), Text.fromChar(char)) };
           };
+          switch (token) {
+            case (#ok(_)) { cursor.inc() };
+            case (#err(_)) { };
+          };
+          token
+        };
       }
-  };
+    };
 
     private func createToken(tokenType: Types.TokenType, value: Text): Result.Result<Token, LexerError> {
       #ok({
@@ -76,6 +87,58 @@ module {
         value = value;
         position = #Instance(cursor.getPos());
       })
+    };
+    private func checkAndApplyQuantifier(token: Token): Result.Result<Token, LexerError> {
+      if (cursor.hasNext()) {
+        switch (cursor.current()) {
+          case '*' { return applyQuantifierToToken(token, 0, null) };
+          case '+' { return applyQuantifierToToken(token, 1, null) };
+          case '?' { return applyQuantifierToToken(token, 0, ?1) };
+          case '{' { return applyQuantifierRangeToToken(token) };
+          case _ { return #ok(token) };
+        };
+      };
+      #ok(token)
+    };
+    private func applyQuantifierToToken(token: Token, min: Nat, max: ?Nat): Result.Result<Token, LexerError> {
+      cursor.inc(); // Consume the quantifier character
+      let mode = if (cursor.hasNext()) {
+        switch (cursor.current()) {
+          case '?' { cursor.inc(); #Lazy };
+          case '+' { cursor.inc(); #Possessive };
+          case _ { #Greedy };
+        }
+      } else {
+        #Greedy
+      };
+      
+      let quantifier = { min = min; max = max; mode = mode };
+      let newTokenType = switch (token.tokenType) {
+        case (#Group(groupData)) { #Group({ modifier = groupData.modifier; subTokens = groupData.subTokens; quantifier = ?quantifier }) };
+        case (#CharacterClass(isNegated, classes)) { #CharacterClass(isNegated, Array.map<CharacterClass, CharacterClass>(classes, func (c) { #Quantified(c, quantifier) })) };
+        case _ { #Quantifier(quantifier) };
+      };
+      
+      #ok({ tokenType = newTokenType; value = token.value # Text.fromChar('*'); position = token.position })
+    };
+    private func applyQuantifierRangeToToken(token: Token): Result.Result<Token, LexerError> {
+      let quantifierResult = tokenizeQuantifierRange();
+      switch (quantifierResult) {
+        case (#ok(quantifierToken)) {
+          switch (quantifierToken.tokenType) {
+            case (#Quantifier(quantifier)) {
+              let newTokenType = switch (token.tokenType) {
+                case (#Group(groupData)) { #Group({ modifier = groupData.modifier; subTokens = groupData.subTokens; quantifier = ?quantifier }) };
+                case (#CharacterClass(isNegated, classes)) { #CharacterClass(isNegated, Array.map<CharacterClass, CharacterClass>(classes, func (c) { #Quantified(c, quantifier) })) };
+                case _ { #Quantifier(quantifier) };
+              };
+              #ok({ tokenType = newTokenType; value = token.value # quantifierToken.value; position = token.position })
+            };
+            case (_) { #err(#GenericError("Unexpected token type for quantifier at position " # Nat.toText(cursor.getPos()))) };
+          };
+        };
+        case (#err(error)) { #err(error) };
+      }
     };
 
     private func tokenizeQuantifier(min: Nat, max: ?Nat): Result.Result<Token, LexerError> {
@@ -190,46 +253,47 @@ module {
       createToken(#CharacterClass(isNegated, classTokens), Extensions.slice(input, start, ?cursor.getPos()))
     };
     private func tokenizeGroup(): Result.Result<Token, LexerError> {
-    let start = cursor.getPos();
-    if (not cursor.hasNext()) {
+      let start = cursor.getPos();
+      if (not cursor.hasNext()) {
         return #err(#GenericError("Unexpected end of input at position " # Nat.toText(start)));
-    };
-    cursor.inc(); // Consume the opening parenthesis
+      };
+      cursor.inc(); // Consume the opening parenthesis
 
-    let groupModifierResult = parseGroupModifier();
-    var groupModifier: ?Types.GroupModifierType = null;
-    switch (groupModifierResult) {
+      let groupModifierResult = parseGroupModifier();
+      var groupModifier: ?Types.GroupModifierType = null;
+      switch (groupModifierResult) {
         case (#err(error)) { return #err(error) };
         case (#ok(modifier)) { groupModifier := modifier };
-    };
+      };
 
-    let subExprResult = tokenizeSubExpression();
-    var subTokens: [Token] = [];
-    switch (subExprResult) {
+      let subExprResult = tokenizeSubExpression();
+      var subTokens: [Token] = [];
+      switch (subExprResult) {
         case (#err(error)) { return #err(error) };
         case (#ok(tokens)) { subTokens := Buffer.toArray(tokens) };
-    };
+      };
 
-    if (not cursor.hasNext()) {
+      if (not cursor.hasNext()) {
         return #err(#GenericError("Unexpected end of input while parsing group at position " # Nat.toText(start)));
-    };
+      };
 
-    if (cursor.current() != ')') {
+      if (cursor.current() != ')') {
         return #err(#GenericError("Expected closing parenthesis at position " # Nat.toText(cursor.getPos()) # ", found '" # Text.fromChar(cursor.current()) # "'"));
-    };
+      };
 
-    cursor.inc(); // Consume the closing parenthesis
+      cursor.inc(); // Consume the closing parenthesis
 
-    let groupToken: Token = {
+      let groupToken: Token = {
         tokenType = #Group({
-            modifier = groupModifier;
-            subTokens = subTokens;
+          modifier = groupModifier;
+          subTokens = subTokens;
+          quantifier = null; // Initialize with no quantifier
         });
         value = Extensions.slice(input, start, ?cursor.getPos());
         position = #Span(start, cursor.getPos() - 1);
+      };
+      #ok(groupToken)
     };
-    #ok(groupToken)
-};
 
 
     private func parseGroupModifier(): Result.Result<?Types.GroupModifierType, LexerError> {
