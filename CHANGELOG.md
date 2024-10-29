@@ -1,3 +1,19 @@
+# [0.1.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.0.0...v0.1.0) (2024-10-29)
+
+
+### Bug Fixes
+
+* setup semantic release workflow ([823d429](https://github.com/Demali-876/motoko_regex_engine/commit/823d429f549ccde9812db741c5d22126282c9c29))
+* setup semantic release workflow ([a7addf2](https://github.com/Demali-876/motoko_regex_engine/commit/a7addf26dd204370a4afe77208b0ec5913163d40))
+* setup semantic release workflow ([8dffe34](https://github.com/Demali-876/motoko_regex_engine/commit/8dffe34f9726fe79baa14b6f5a20f96570ba5f91))
+
+
+### Features
+
+* add semantic release configuration ([9cbf0ab](https://github.com/Demali-876/motoko_regex_engine/commit/9cbf0abe8f6a944019bb36c504ebe90a319e0953))
+* **engine:** change log automation ([bf83e73](https://github.com/Demali-876/motoko_regex_engine/commit/bf83e73b54c7b46c1810e6ace3a1e2997f6a3aa3))
+* **parser:** add nested quantifier support ([f8055a6](https://github.com/Demali-876/motoko_regex_engine/commit/f8055a6f5a90cfb3bc56a28ba6a3f6f03826b34e))
+
 # [0.0.0] Unreleased - 10-03-2024
 
 ## 🚀 New Features
