@@ -7,7 +7,6 @@
     "test": "test"
   },
   "scripts": {
-    "prepare": "husky install",
     "semantic-release": "semantic-release"
   },
   "keywords": [],
