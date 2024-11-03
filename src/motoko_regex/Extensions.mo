@@ -3,10 +3,17 @@ import Array "mo:base/Array";
 import Buffer "mo:base/Buffer";
 import Text "mo:base/Text";
 import Nat "mo:base/Nat";
+import Nat32 "mo:base/Nat32";
+import Iter "mo:base/Iter";
 import Char "mo:base/Char";
 import Debug "mo:base/Debug";
+import Order "mo:base/Order";
 
 module{
+    type State = Types.State;
+    type Transition = Types.Transition;
+    type AST = Types.AST;
+    
     public func maxChar(a: Char, b: Char) : Char {
     if (Char.toNat32(a) > Char.toNat32(b)) {
         a
@@ -119,6 +126,104 @@ module{
               };
           }
       };
+      public func computeClassRanges(nodes: [AST], isNegated: Bool): [(Char, Char)] {
+    // Collect all ranges into a buffer
+    let ranges = Buffer.Buffer<(Char, Char)>(16);
+    
+    // First pass: collect all ranges from nodes
+    for (node in nodes.vals()) {
+        switch(node) {
+            case (#Character(c)) {
+                ranges.add((c, c));
+            };
+            case (#Range(start, end)) {
+                ranges.add((start, end));
+            };
+            case (#Metacharacter(m)) {
+                let metaRanges = metacharToRanges(m);
+                for (range in metaRanges.vals()) {
+                    ranges.add(range);
+                };
+            };
+            case _ {}; // Ignore other node types
+        };
+    };
+    let sortedRanges = Array.sort<(Char, Char)>(
+        Buffer.toArray(ranges),
+        func(a: (Char, Char), b: (Char, Char)): Order.Order{
+            Nat32.compare(Char.toNat32(a.0), Char.toNat32(b.0))
+        }
+    );
+
+    // Merge overlapping ranges
+    let mergedRanges = Buffer.Buffer<(Char, Char)>(sortedRanges.size());
+    if (sortedRanges.size() > 0) {
+        var current = sortedRanges[0];
+        for (i in Iter.range(1, sortedRanges.size() - 1)) {
+            let next = sortedRanges[i];
+            if (Char.toNat32(current.1) + 1 >= Char.toNat32(next.0)) {
+                // Ranges overlap or are adjacent, merge them
+                current := (
+                    current.0,
+                    if (Char.toNat32(current.1) > Char.toNat32(next.1)) current.1 else next.1
+                );
+            } else {
+                // No overlap, add current range and start new one
+                mergedRanges.add(current);
+                current := next;
+            };
+        };
+        mergedRanges.add(current);
+    };
+
+    if (not isNegated) {
+        Buffer.toArray(mergedRanges)
+    } else {
+        // Compute complement ranges
+        let complementRanges = Buffer.Buffer<(Char, Char)>(mergedRanges.size() + 1);
+        let mergedArray = Buffer.toArray(mergedRanges);
+        
+        // Add range from 0 to first range start if needed
+        if (mergedArray.size() > 0) {
+            let firstStart = Char.toNat32(mergedArray[0].0);
+            if (firstStart > 0) {
+                complementRanges.add((
+                    Char.fromNat32(0),
+                    Char.fromNat32(firstStart - 1)
+                ));
+            };
+            
+            // Add ranges between merged ranges
+            for (i in Iter.range(0, mergedArray.size() - 2)) {
+                let currentEnd = Char.toNat32(mergedArray[i].1);
+                let nextStart = Char.toNat32(mergedArray[i + 1].0);
+                if (currentEnd + 1 < nextStart) {
+                    complementRanges.add((
+                        Char.fromNat32(currentEnd + 1),
+                        Char.fromNat32(nextStart - 1)
+                    ));
+                };
+            };
+            
+            // Add range from last range end to max Unicode if needed
+            let lastEnd = Char.toNat32(mergedArray[mergedArray.size() - 1].1);
+            if (lastEnd < 0x10FFFF) {
+                complementRanges.add((
+                    Char.fromNat32(lastEnd + 1),
+                    Char.fromNat32(0x10FFFF)
+                ));
+            };
+        } else {
+            // If no ranges, complement is the entire Unicode range
+            complementRanges.add((
+                Char.fromNat32(0),
+                Char.fromNat32(0x10FFFF)
+            ));
+        };
+        
+        Buffer.toArray(complementRanges)
+        }
+    };
 
     //finds character at given position 0 based indexing
     public func charAt(i : Nat, t : Text) : Char {
@@ -162,6 +267,10 @@ module{
         case (#UnexpectedToken(tokenType)) "Unexpected token: " # debug_show(tokenType);
         case (#UnclosedGroup(text)) "Unclosed group: " # text;
         case (#InvalidQuantifier(text)) "Invalid quantifier: " # text;
+        case (#InvalidTransition(text)) "Invalid transition: " # text;
+        case (#LabelLimitExceeded(text)) "Label limit has exceeded 10,000 " # text;
+        case (#StateOverflow(text)) "State overflow: " # text;
+        case (#InvalidState(text)) "Invalid state: " # text;
     };
     };
 
@@ -170,8 +279,20 @@ module{
     if (index >= buffer.size()) {
         Debug.trap("Index out of bounds");
     };
-    ignore buffer.remove(index);  
-    buffer.insert(index, newElement); 
+    ignore buffer.remove(index);
+    buffer.insert(index, newElement);
   };
+    public func textToNat( txt : Text) : Nat {
+        assert(txt.size() > 0);
+        let chars = txt.chars();
 
+        var num : Nat = 0;
+        for (v in chars){
+            let charToNum = Nat32.toNat(Char.toNat32(v)-48);
+            assert(charToNum >= 0 and charToNum <= 9);
+            num := num * 10 +  charToNum;          
+        };
+
+        num;
+    };
 };
