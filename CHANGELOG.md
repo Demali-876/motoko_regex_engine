@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.1.0...v0.2.0) (2024-11-03)
+
+
+### Features
+
+* support for nested groups and quantifiers ([f4200ae](https://github.com/Demali-876/motoko_regex_engine/commit/f4200ae86a93c46a6906e61ec958d466452b866f))
+
 # [0.1.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.0.0...v0.1.0) (2024-10-29)
 
 
