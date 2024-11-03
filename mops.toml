@@ -3,7 +3,7 @@ name = "Regex"
 version = "1.0.0"
 description = "Open source motoko regex engine for pattern matching on the Internet Computer."
 repository = "https://github.com/Demali-876/motoko_regex_engine"
-keywords = [ "regex", "engine", "pattern" ]
+keywords = [ "regex", "pattern" ]
 license = "MIT"
 
 [dependencies]
@@ -12,4 +12,4 @@ lrucache = "1.0.0"
 [toolchain]
 moc = "0.13.2"
 wasmtime = "26.0.0"
-pocket-ic = "1.0.0"
+pocket-ic = "4.0.0"
