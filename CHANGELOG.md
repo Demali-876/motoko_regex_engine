@@ -1,3 +1,13 @@
+# [1.0.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.3.0...v1.0.0) (2024-11-03)
+
+
+* refactor!: restructure repository and update compiler version ([786d76b](https://github.com/Demali-876/motoko_regex_engine/commit/786d76bde98f5ac9387bab2157ad158f99e4b6f2))
+
+
+### BREAKING CHANGES
+
+* The repository structure and file names have changed. Additionally, the compiler has been reverted to an older version.
+
 # [0.3.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.2.0...v0.3.0) (2024-11-03)
 
 
