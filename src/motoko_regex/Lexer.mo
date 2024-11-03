@@ -4,27 +4,30 @@ import Array "mo:base/Array";
 import Int "mo:base/Int";
 import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
-import Debug "mo:base/Debug";
 import Types "Types";
 import Extensions "Extensions";
 import Cursor "Cursor";
 
 module {
   type Token = Types.Token;
-  type LexerError = Types.RegexError;
+  public type LexerError = Types.RegexError;
   type CharacterClass = Types.CharacterClass;
   public class Lexer(input: Text) {
     let cursor = Cursor.Cursor(input);
     let tokenBuffer = Buffer.Buffer<Token>(16);
 
-    public func tokenize(): [Token] {
+    public func tokenize(): Result.Result<[Token], LexerError> {
       while (cursor.hasNext()) {
         switch (nextToken()) {
-          case (#ok(token)) { tokenBuffer.add(token) };
-          case (#err(error)) { Debug.trap(Extensions.errorToText(error)) };
+          case (#ok(token)) {
+            tokenBuffer.add(token);
+          };
+          case (#err(error)) {
+            return #err(error);
+          };
         };
       };
-      Buffer.toArray(tokenBuffer)
+      #ok(Buffer.toArray(tokenBuffer))
     };
 
     private func nextToken(): Result.Result<Token, LexerError> {
@@ -44,7 +47,7 @@ module {
                 case (#err(error)) { return #err(error) };
               };
             };
-            case '[' { 
+            case '[' {
               switch (tokenizeCharacterClass()) {
                 case (#ok(token)) {
                   let quantifiedToken = checkAndApplyQuantifier(token);
@@ -234,7 +237,7 @@ module {
         };
       };
 
-      if (not cursor.hasNext() or cursor.current() != ']') {
+      if (not cursor.hasNext() and cursor.current() != ']') {
       return #err(#GenericError("Unclosed character class at position " # Nat.toText(cursor.getPos())));
       };
 
@@ -328,42 +331,24 @@ module {
 
     private func tokenizeSubExpression(): Result.Result<Buffer.Buffer<Token>, LexerError> {
     var subTokens = Buffer.Buffer<Token>(16);
-    var depth = 1;
+    
+    while (cursor.hasNext()) {
+        if (cursor.current() == ')') {
+            return #ok(subTokens);
+        };
 
-    while (cursor.hasNext() and depth > 0) {
-        switch (cursor.current()) {
-            case '(' {
-                switch (tokenizeGroup()) {
-                    case (#ok(token)) {
-                        subTokens.add(token);
-                    };
-                    case (#err(error)) { return #err(error) };
-                };
+        switch (nextToken()) {
+            case (#ok(token)) { 
+                subTokens.add(token);
             };
-            case ')' {
-                depth -= 1;
-                if (depth == 0) {
-                    return #ok(subTokens);
-                } else {
-                    return #ok(subTokens);
-                };
-            };
-            case _ {
-                switch (nextToken()) {
-                    case (#ok(token)) { subTokens.add(token) };
-                    case (#err(error)) { return #err(error) };
-                };
+            case (#err(error)) { 
+                return #err(error);
             };
         };
     };
 
-    if (depth > 0) {
-        return #err(#GenericError("Unclosed group at position " # Nat.toText(cursor.getPos())));
-    };
-
-    #ok(subTokens)
-    };
-
+    #err(#GenericError("Unclosed group at position " # Nat.toText(cursor.getPos())))
+};
     private func tokenizeEscapedChar(): Result.Result<Token, LexerError> {
       cursor.inc();
       switch (cursor.current()) {
