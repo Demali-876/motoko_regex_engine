@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.2.0...v0.3.0) (2024-11-03)
+
+
+### Features
+
+* calculation of complement range given meta char ([0a1b793](https://github.com/Demali-876/motoko_regex_engine/commit/0a1b793d7576da9f9cecc665a3bc184beb904b85))
+
 # [0.2.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.1.0...v0.2.0) (2024-11-03)
 
 
