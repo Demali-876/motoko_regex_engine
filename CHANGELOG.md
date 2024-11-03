@@ -61,17 +61,3 @@
 - [#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587) Eliminated Redundant Tokens
 
 ---
-
-### **To-Do Checklist**
-
-- [x] **Parser Overhaul | Status: Completed | Date: 10-08-2024** Commit:[#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587)  
-  - [x] Adapt the parser to utilize the new flattened AST structure.
-  - [x] Ensure proper handling of the unified `#Group` token, including its modifiers and sub-expression references.
-
-- [x] **NFA Construction | Status: Started | Date: 10-08-2024** Commit: [#223b153](https://github.com/Demali-876/motoko_regex_engine/commit/223b153249386492ac60d47a8806a4aa465b9587)
-  - [x] Refactor NFA construction to take advantage of the flattened AST for incremental optimization.
-  - [ ] Implement state reduction and bisimulation in the NFA to prevent state explosion.
-
-- [ ] **Incremental Optimization**
-  - [ ] Introduce optimizations during NFA construction to reduce unnecessary state transitions.
-  - [ ] Merge equivalent states where possible to minimize the NFA's complexity
