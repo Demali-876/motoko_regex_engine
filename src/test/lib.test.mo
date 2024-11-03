@@ -1,9 +1,9 @@
-import Lexer "Lexer";
-import Parser "Parser";
-import Compiler "Compiler";
+import Lexer "../Lexer";
+import Parser "../Parser";
+import Compiler "../Compiler";
 import Result "mo:base/Result";
-import Extensions "Extensions";
-import Types "Types";
+import Extensions "../Extensions";
+import Types "../Types";
 import Debug "mo:base/Debug";
 
 actor {
@@ -57,4 +57,3 @@ actor {
     };
     }*/
 };
-
