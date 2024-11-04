@@ -10,14 +10,16 @@ actor {
     type Token = Types.Token;
     type LexerError = Lexer.LexerError;
     type ParserError = Parser.ParserError;
+    type CompilerError = Compiler.CompilerError;
     type AST = Types.AST;
+    
 
-    public query func testLexer(t: Text): async Result.Result<[Token], LexerError>{
+    public query func testLexer(t: Text): async Result.Result<[Types.Token], Types.RegexError>{
         let lexer = Lexer.Lexer(t);
         lexer.tokenize();
     };
 
-    public query func testParser(t: Text): async Result.Result<AST, ParserError> {
+    public query func testParser(t: Text): async Result.Result<Types.AST, Types.RegexError> {
     let lexer = Lexer.Lexer(t);
     switch (lexer.tokenize()) {
         case (#ok(tokens)) {
@@ -29,31 +31,37 @@ actor {
             };
         }
     };
-  /*public query func testCompiler(t :Text): async Result.Result<Types.CompiledRegex,Error> {
+  public query func testCompiler(t :Text): async Result.Result<Types.CompiledRegex,Types.RegexError> {
     let lexer = Lexer.Lexer(t);
-    let tokenResult = switch (lexer.tokenize()){
-        case (#ok(tokens)){
+    
+    switch (lexer.tokenize()) {
+        case (#err(error)) {
+            #err((error))
+        };
+        
+        case (#ok(tokens)) {
             let parser = Parser.Parser(tokens);
+            
             switch (parser.parse()) {
-        case (#ok(ast)) {
-            let compiler = Compiler.Compiler();
-            switch (compiler.compile(ast)){
-                case (#ok(compiledRegex)) {
-                    compiledRegex
-                };
                 case (#err(error)) {
-                    Debug.trap("Compiler error: " # Extensions.errorToText(error));
+                    #err((error))
+                };
+                
+                case (#ok(ast)) {
+                    let compiler = Compiler.Compiler();
+                    
+                    switch (compiler.compile(ast)) {
+                        case (#err(error)) {
+                            #err((error))
+                        };
+                        
+                        case (#ok(compiledRegex)) {
+                            #ok(compiledRegex)
+                        };
+                    }
                 };
             }
         };
-        case (#err(error)) {
-            Debug.trap("Parser error: " # Extensions.errorToText(error));
-        };
-        };
-        };
-        case(#err(error)){
-
-        };
-    };
-    }*/
+    }
+  }
 };
