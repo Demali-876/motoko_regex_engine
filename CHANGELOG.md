@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.3...v1.0.4) (2024-11-04)
+
+
+### Bug Fixes
+
+* **Compiler:** Revertion to thompson's construction ([df7e1f2](https://github.com/Demali-876/motoko_regex_engine/commit/df7e1f2ee158609698e0778e1aa15f401c49f4e5))
+
 ## [1.0.3](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.2...v1.0.3) (2024-11-04)
 
 
