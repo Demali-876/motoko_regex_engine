@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.1...v1.0.2) (2024-11-04)
+
+
+### Bug Fixes
+
+* **parser:** General improvements ([7337fca](https://github.com/Demali-876/motoko_regex_engine/commit/7337fcab7836ed0616495d14b7778f85c2862526))
+
 ## [1.0.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.0...v1.0.1) (2024-11-04)
 
 
