@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.2...v1.0.3) (2024-11-04)
+
+
+### Bug Fixes
+
+* **lexer:** Nested Group and quantifier support ([22764dc](https://github.com/Demali-876/motoko_regex_engine/commit/22764dcf79cb87b208f77b24c868d2d962809114))
+* **parser:** Nested Group and quantifier support ([e5c41fb](https://github.com/Demali-876/motoko_regex_engine/commit/e5c41fbc9454193ca22b7b86ffbd250068a679b0))
+
 ## [1.0.2](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.1...v1.0.2) (2024-11-04)
 
 
