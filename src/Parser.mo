@@ -142,51 +142,58 @@ module {
     };
 
     private func parseSingleExpression(): Result.Result<AST, ParserError> {
-      switch (peekToken()) {
-        case (?token) {
-          switch (token.tokenType) {
-            case (#Character(char)) { 
-              ignore advanceCursor();
-              parseQuantifierIfPresent(#Character(char))
-            };
-            case (#Metacharacter(metaType)) {
-              ignore advanceCursor();
-              parseQuantifierIfPresent(#Metacharacter(metaType))
-            };
-            case (#Anchor(anchorType)) {
-              ignore advanceCursor();
-              #ok(#Anchor(anchorType))
-            };
-            case (#CharacterClass(isNegated, classes)) {
-              ignore advanceCursor();
-              switch (validateCharacterClass(classes)) {
-                case (#err(error)) { return #err(error) };
-                case (#ok()) {
-                  let astClasses = Array.map<Types.CharacterClass, AST>(
-                    classes, 
-                    characterClassElementToAST
-                  );
-                  parseQuantifierIfPresent(#CharacterClass({
-                    isNegated = isNegated;
-                    classes = astClasses;
-                  }))
-                };
-              };
-            };
-            case (#Group(groupData)) {
-              ignore advanceCursor();
-              parseGroup(groupData)
-            };
-            case (_) {
-              #err(#UnexpectedToken(token.tokenType))
-            };
-          }
+  switch (peekToken()) {
+    case (?token) {
+      switch (token.tokenType) {
+        case (#Character(char)) { 
+          ignore advanceCursor();
+          parseQuantifierIfPresent(#Character(char))
         };
-        case (null) {
-          #err(#UnexpectedEndOfInput)
+        case (#Metacharacter(metaType)) {
+          ignore advanceCursor();
+          parseQuantifierIfPresent(#Metacharacter(metaType))
+        };
+        case (#Anchor(anchorType)) {
+          ignore advanceCursor();
+          #ok(#Anchor(anchorType))
+        };
+        case (#CharacterClass(isNegated, classes)) {
+          ignore advanceCursor();
+          switch (validateCharacterClass(classes)) {
+            case (#err(error)) { return #err(error) };
+            case (#ok()) {
+              let astClasses = Array.map<Types.CharacterClass, AST>(
+                classes, 
+                characterClassElementToAST
+              );
+              parseQuantifierIfPresent(#CharacterClass({
+                isNegated = isNegated;
+                classes = astClasses;
+              }))
+            };
+          };
+        };
+        case (#Group(groupData)) {
+          ignore advanceCursor();
+          // Parse the group first
+          switch(parseGroup(groupData)) {
+            case (#ok(groupAst)) {
+              // Then check for quantifiers
+              parseQuantifierIfPresent(groupAst)
+            };
+            case (#err(e)) { #err(e) };
+          };
+        };
+        case (_) {
+          #err(#UnexpectedToken(token.tokenType))
         };
       }
     };
+    case (null) {
+      #err(#UnexpectedEndOfInput)
+    };
+  }
+};
 
     private func validateCharacterClass(classes: [Types.CharacterClass]): Result.Result<(), ParserError> {
       if (classes.size() == 0) {
@@ -220,82 +227,86 @@ module {
     };
 
     private func parseGroup(groupData: {
-      modifier: ?Types.GroupModifierType; 
-      subTokens: [Token]; 
-      quantifier: ?Types.QuantifierType
+        modifier: ?Types.GroupModifierType; 
+        subTokens: [Token]; 
+        quantifier: ?Types.QuantifierType
     }): Result.Result<AST, ParserError> {
-      // Validate group data
-      switch (groupData.quantifier) {
-        case (?quantifier) {
-          if (quantifier.min > maxQuantifier) {
-            return #err(#InvalidQuantifier("Group quantifier min value too large"));
-          };
-          switch (quantifier.max) {
-            case (?max) {
-              if (max > maxQuantifier or max < quantifier.min) {
-                return #err(#InvalidQuantifier("Invalid group quantifier range"));
-              };
+        // Validate group data
+        switch (groupData.quantifier) {
+            case (?quantifier) {
+                if (quantifier.min > maxQuantifier) {
+                    return #err(#InvalidQuantifier("Group quantifier min value too large"));
+                };
+                switch (quantifier.max) {
+                    case (?max) {
+                        if (max > maxQuantifier or max < quantifier.min) {
+                            return #err(#InvalidQuantifier("Invalid group quantifier range"));
+                        };
+                    };
+                    case (null) {};
+                };
             };
             case (null) {};
-          };
         };
-        case (null) {};
-      };
 
-      // Save parser state
-      let savedTokens = tokens;
-      let savedCursor = cursor;
-      let savedCaptureIndex = captureGroupIndex;
+        // Save parser state
+        let savedTokens = tokens;
+        let savedCursor = cursor;
+        let savedCaptureIndex = captureGroupIndex;
 
-      // Parse group contents
-      tokens := groupData.subTokens;
-      cursor := 0;
+        // Parse group contents
+        tokens := groupData.subTokens;
+        cursor := 0;
 
-      let result = parseAlternation();
+        let result = parseAlternation();
 
-      // Restore parser state
-      tokens := savedTokens;
-      cursor := savedCursor;
+        // Restore parser state
+        tokens := savedTokens;
+        cursor := savedCursor;
 
-      switch (result) {
-        case (#ok(groupNode)) {
-          let isCapturing = switch (groupData.modifier) {
-            case (?#NonCapturing) { false };
-            case (_) { true };
-          };
+        switch (result) {
+            case (#ok(groupNode)) {
+                // Determine if this group is capturing
+                let isCapturing = switch (groupData.modifier) {
+                    case (?#NonCapturing) { false };
+                    case (_) { true };
+                };
 
-          let currentCaptureIndex = if (isCapturing) {
-            let index = captureGroupIndex;
-            captureGroupIndex += 1;
-            ?index
-          } else {
-            null
-          };
+                // Assign capture index if capturing
+                let currentCaptureIndex = if (isCapturing) {
+                    let index = captureGroupIndex;
+                    captureGroupIndex += 1;
+                    ?index
+                } else {
+                    null
+                };
 
-          let groupAST = #Group({
-            subExpr = groupNode;
-            modifier = groupData.modifier;
-            captureIndex = currentCaptureIndex;
-          });
+                let groupAST = #Group({
+                    subExpr = groupNode;
+                    modifier = groupData.modifier;
+                    captureIndex = currentCaptureIndex;
+                });
 
-          switch (groupData.quantifier) {
-            case (?quantifier) {
-              #ok(#Quantifier({
-                subExpr = groupAST;
-                quantifier = quantifier;
-              }))
+                switch (groupData.quantifier) {
+                    case (?quantifier) {
+                        #ok(#Quantifier({
+                            subExpr = groupAST;
+                            quantifier = quantifier;
+                        }))
+                    };
+                    case (null) {
+                        #ok(groupAST)
+                    };
+                }
             };
-            case (null) {
-              #ok(groupAST)
+            case (#err(error)) { 
+                // Reset capture index if error occurs
+                captureGroupIndex := savedCaptureIndex;
+                #err(error) 
             };
-          }
-        };
-        case (#err(error)) { 
-          captureGroupIndex := savedCaptureIndex;
-          #err(error) 
-        };
-      }
+        }
     };
+
 
    private func parseQuantifierIfPresent(astNode: AST): Result.Result<AST, ParserError> {
   if (cursor < tokens.size()) {
