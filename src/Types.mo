@@ -1,27 +1,15 @@
 import Text "mo:base/Text";
 import Char "mo:base/Char";
 module{
-    public type AST = ASTNode;
-    public type ASTNode = {
-      #Character : Char;
-      #Concatenation : [AST];
-      #Alternation : [AST];
-      #Quantifier : {
-        subExpr: AST;
-        quantifier: QuantifierType;
-      };
-      #Range:(Char,Char);
-      #Group : {
-          subExpr: AST;
-          modifier: ?GroupModifierType;
-          captureIndex: ?Nat;
-      };
-      #Metacharacter : MetacharacterType;
-      #CharacterClass : {
-          isNegated: Bool;
-          classes: [AST]; 
-      };
-      #Anchor : AnchorType;
+   //Lexer Types
+    public type Token = {
+      tokenType : TokenType;
+      value : Text;
+      position : Position;
+    };
+    public type Position={
+      #Instance :Nat;
+      #Span : (Nat, Nat);
     };
     public type TokenType = {
       #Character : Char;
@@ -65,10 +53,6 @@ module{
       max : ?Nat;
       mode : QuantifierMode;
     };
-    public type Position={
-      #Instance :Nat;
-      #Span : (Nat, Nat);
-    };
 
     public type GroupModifierType = {
       #NonCapturing;
@@ -88,12 +72,31 @@ module{
       #PreviousMatchEnd;
     };
 
-    public type Token = {
-      tokenType : TokenType;
-      value : Text;
-      position : Position;
+    //AST Types
+    public type AST = ASTNode;
+    public type ASTNode = {
+      #Character : Char;
+      #Concatenation : [AST];
+      #Alternation : [AST];
+      #Quantifier : {
+        subExpr: AST;
+        quantifier: QuantifierType;
+      };
+      #Range:(Char,Char);
+      #Group : {
+          subExpr: AST;
+          modifier: ?GroupModifierType;
+          captureIndex: ?Nat;
+      };
+      #Metacharacter : MetacharacterType;
+      #CharacterClass : {
+          isNegated: Bool;
+          classes: [AST]; 
+      };
+      #Anchor : AnchorType;
     };
 
+    //Error Types
     public type RegexError = {
       #UnexpectedCharacter: Char;
       #UnexpectedEndOfInput;
@@ -110,9 +113,8 @@ module{
       #StateOverflow: Text;
       #InvalidState: Text;
   };
-
+    //NFA Types
     public type State = Nat;
-
   public type Transition = {
     fromState: State;
     toState: State;
