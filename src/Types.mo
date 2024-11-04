@@ -1,7 +1,7 @@
 import Text "mo:base/Text";
 import Char "mo:base/Char";
 module{
-   //Lexer Types
+   //Lexer Token Types
     public type Token = {
       tokenType : TokenType;
       value : Text;
@@ -113,26 +113,23 @@ module{
       #StateOverflow: Text;
       #InvalidState: Text;
   };
-    //NFA Types
-    public type State = Nat;
-  public type Transition = {
-    fromState: State;
-    toState: State;
-    symbol: {
-        #Char: Char;
-        #Range: (Char, Char);
-        #Epsilon;
-    };
+  //NFA Types
+  public type State = Nat;
+  public type Sybmol ={
+    #Range : (Char, Char);
+    #Char :Char;
+    #Epsilon;
   };
-
-  public type TransitionTable = [(State, Transition, State)];
+  public type Transition = (State, Sybmol, State);
+  
 
   public type CompiledRegex = {
     states : [State];
-    transitions : TransitionTable;
+    transitions : [Transition];
     startState : State;
     acceptStates : [State];
   };
+  //Matcher Types
   public type MatchResult = {
     status: MatchStatus;
     start: Nat;
