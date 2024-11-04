@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.4...v1.1.0) (2024-11-04)
+
+
+### Bug Fixes
+
+* **types:** concatenation removed as a token type. ([a13655a](https://github.com/Demali-876/motoko_regex_engine/commit/a13655ab15d45e321665f4f926b33091b498e23a))
+
+
+### Features
+
+* **Extensions:** introduction of getMaxState() function ([dbf21d5](https://github.com/Demali-876/motoko_regex_engine/commit/dbf21d59b1467b82f5456bda53e0a9a5ec690c49))
+
 ## [1.0.4](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.3...v1.0.4) (2024-11-04)
 
 
