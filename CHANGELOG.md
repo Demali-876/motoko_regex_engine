@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.0...v1.0.1) (2024-11-04)
+
+
+### Bug Fixes
+
+* **lexer:** Token stream fix ([53f76cc](https://github.com/Demali-876/motoko_regex_engine/commit/53f76cc6d97c4da4b0fb32c20674a0f4b386929e))
+
 # [1.0.0](https://github.com/Demali-876/motoko_regex_engine/compare/v0.3.0...v1.0.0) (2024-11-03)
 
 
