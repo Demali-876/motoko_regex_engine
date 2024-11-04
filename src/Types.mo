@@ -115,12 +115,12 @@ module{
   };
   //NFA Types
   public type State = Nat;
-  public type Sybmol ={
+  public type Symbol ={
     #Range : (Char, Char);
     #Char :Char;
     #Epsilon;
   };
-  public type Transition = (State, Sybmol, State);
+  public type Transition = (State, Symbol, State);
   
 
   public type CompiledRegex = {
