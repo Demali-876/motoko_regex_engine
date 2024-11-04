@@ -19,7 +19,6 @@ module{
       #CharacterClass : (Bool, [CharacterClass]);
       #Anchor : AnchorType;
       #Alternation;
-      #Concatenation;
       #Group : {
           modifier: ?GroupModifierType;
           subTokens: [Token];
@@ -108,6 +107,8 @@ module{
       #UnexpectedToken: TokenType;
       #UnclosedGroup: Text;
       #InvalidQuantifier: Text;
+      #EmptyExpression: Text;
+      #UnsupportedASTNode: Text;
       #InvalidTransition: Text;
       #LabelLimitExceeded: Text;
       #StateOverflow: Text;
