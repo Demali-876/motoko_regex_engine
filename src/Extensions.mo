@@ -207,24 +207,36 @@ module{
             
             // Add range from last range end to max Unicode if needed
             let lastEnd = Char.toNat32(mergedArray[mergedArray.size() - 1].1);
-            if (lastEnd < 0x10FFFF) {
+            if (lastEnd < 255) {
                 complementRanges.add((
                     Char.fromNat32(lastEnd + 1),
-                    Char.fromNat32(0x10FFFF)
+                    Char.fromNat32(255)
                 ));
             };
         } else {
             // If no ranges, complement is the entire Unicode range
             complementRanges.add((
                 Char.fromNat32(0),
-                Char.fromNat32(0x10FFFF)
+                Char.fromNat32(255)
             ));
         };
         
         Buffer.toArray(complementRanges)
         }
     };
-
+    public func getMaxState(transitions: [Transition], acceptStates: [State], startState: State): State {
+      var maxState = startState;
+      // Check transitions
+      for ((from, _, to) in transitions.vals()) {
+        if (from > maxState) maxState := from;
+        if (to > maxState) maxState := to;
+      };
+      // Check accept states
+      for (state in acceptStates.vals()) {
+        if (state > maxState) maxState := state;
+      };
+      maxState
+    };
     //finds character at given position 0 based indexing
     public func charAt(i : Nat, t : Text) : Char {
       let arr = Text.toArray(t);
