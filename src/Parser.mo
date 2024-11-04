@@ -2,6 +2,7 @@ import Nat "mo:base/Nat";
 import Types "Types";
 import Result "mo:base/Result";
 import Array "mo:base/Array";
+import Char "mo:base/Char";
 
 module {
   public type ParserError = Types.RegexError;
@@ -12,123 +13,172 @@ module {
     var tokens = initialTokens;
     var cursor : Nat = 0;
     var captureGroupIndex = 1;
+    let maxQuantifier : Nat = 1000; 
 
     public func parse(): Result.Result<AST, ParserError> {
-      parseAlternation()
+      cursor := 0;
+      captureGroupIndex := 1;
+      
+      if (tokens.size() == 0) {
+        return #err(#GenericError("Empty pattern"));
+      };
+
+      let result = parseAlternation();
+      
+      // Ensure we consumed all tokens
+      if (cursor < tokens.size()) {
+        return #err(#UnexpectedToken(tokens[cursor].tokenType));
+      };
+
+      result
     };
-    
-    // Entry point for parsing alternations
+
     private func parseAlternation(): Result.Result<AST, ParserError> {
       var nodes: [AST] = [];
-      label alternationLoop while (cursor < tokens.size()) {
-        switch (parseConcatenation()) {
-          case (#ok(node)) {
-            nodes := Array.append(nodes, [node]);
-          };
-          case (#err(error)) { return #err(error) };
+      
+      // Parse first expression
+      switch (parseConcatenation()) {
+        case (#ok(node)) {
+          nodes := Array.append(nodes, [node]);
         };
+        case (#err(error)) { return #err(error) };
+      };
+
+      // Parse alternatives
+      label aloop while (cursor < tokens.size()) {
         switch (peekToken()) {
           case (?token) {
             if (token.tokenType == #Alternation) {
               ignore advanceCursor(); // Consume '|'
-            } else {
-              break alternationLoop;
-            }
-          };
-          case (null) { break alternationLoop };
-        };
-      };
-      if (nodes.size() == 1) {
-        #ok(nodes[0])
-      } else {
-        #ok(#Alternation(nodes))
-      }
-    };
-
-    // Parses concatenated expressions
-    private func parseConcatenation(): Result.Result<AST, ParserError> {
-      var nodes: [AST] = [];
-      label concatLoop while (cursor < tokens.size()) {
-        switch (peekToken()) {
-          case (?token) {
-            if (token.tokenType == #Alternation) {
-              break concatLoop;
-            } else {
-              switch (parseSingleExpression()) {
+              
+              // Check for empty alternative
+              switch (peekToken()) {
+                case (?nextToken) {
+                  if (nextToken.tokenType == #Alternation) {
+                    return #err(#GenericError("Empty alternative not allowed in pattern"));
+                  };
+                };
+                case (null) {
+                  return #err(#GenericError("Unexpected end of pattern after '|'"));
+                };
+              };
+              
+              switch (parseConcatenation()) {
                 case (#ok(node)) {
                   nodes := Array.append(nodes, [node]);
                 };
                 case (#err(error)) { return #err(error) };
               };
-            }
+            } else {
+              break aloop;
+            };
           };
-          case (null) { break concatLoop };
+          case (null) { break aloop };
         };
       };
+
       if (nodes.size() == 1) {
         #ok(nodes[0])
+      } else if (nodes.size() > 1) {
+        #ok(#Alternation(nodes))
       } else {
-        #ok(#Concatenation(nodes))
+        #err(#GenericError("Empty pattern"))
       }
     };
 
-    // Parses a single expression, including quantifiers
+    private func parseConcatenation(): Result.Result<AST, ParserError> {
+      var nodes: [AST] = [];
+      
+      switch (peekToken()) {
+        case (?token) {
+          if (token.tokenType != #Alternation) {
+            switch (parseSingleExpression()) {
+              case (#ok(node)) {
+                nodes := Array.append(nodes, [node]);
+              };
+              case (#err(error)) { return #err(error) };
+            };
+          };
+        };
+        case (null) {};
+      };
+      
+      label cloop while (cursor < tokens.size()) {
+        switch (peekToken()) {
+          case (?token) {
+            switch (token.tokenType) {
+              case (#Alternation) { break cloop };
+              case (#Group(groupData)) {
+                if (groupData.modifier == ?#NegativeLookbehind or 
+                    groupData.modifier == ?#PositiveLookbehind) {
+                  break cloop; // Lookbehind must be at start of pattern
+                };
+                switch (parseSingleExpression()) {
+                  case (#ok(node)) {
+                    nodes := Array.append(nodes, [node]);
+                  };
+                  case (#err(error)) { return #err(error) };
+                };
+              };
+              case (_) {
+                switch (parseSingleExpression()) {
+                  case (#ok(node)) {
+                    nodes := Array.append(nodes, [node]);
+                  };
+                  case (#err(error)) { return #err(error) };
+                };
+              };
+            };
+          };
+          case (null) { break cloop};
+        };
+      };
+
+      switch (nodes.size()) {
+        case 0 { #err(#GenericError("Empty pattern segment")) };
+        case 1 { #ok(nodes[0]) };
+        case _ { #ok(#Concatenation(nodes)) };
+      }
+    };
+
     private func parseSingleExpression(): Result.Result<AST, ParserError> {
       switch (peekToken()) {
         case (?token) {
           switch (token.tokenType) {
-            case (#Character(_)) { parsePrimary() };
-            case (#Metacharacter(_)) { parsePrimary() };
-            case (#Anchor(_)) { parsePrimary() };
-            case (#CharacterClass(_, _)) { parsePrimary() };
-            case (#Group(_)) { parsePrimary() };
-            case (_) {
-              #err(#GenericError("Unexpected token: " # debug_show(token.tokenType)))
-            };
-          }
-        };
-        case (null) { #err(#UnexpectedEndOfInput) };
-      }
-    };
-
-    // Parses primary expressions (characters, groups, character classes)
-    private func parsePrimary(): Result.Result<AST, ParserError> {
-      switch (advanceCursor()) {
-        case (?token) {
-          switch (token.tokenType) {
-            case (#Character(char)) {
-              let node = #Character(char);
-              parseQuantifierIfPresent(node)
+            case (#Character(char)) { 
+              ignore advanceCursor();
+              parseQuantifierIfPresent(#Character(char))
             };
             case (#Metacharacter(metaType)) {
-              let node = #Metacharacter(metaType);
-              parseQuantifierIfPresent(node)
+              ignore advanceCursor();
+              parseQuantifierIfPresent(#Metacharacter(metaType))
             };
             case (#Anchor(anchorType)) {
-              let node = #Anchor(anchorType);
-              parseQuantifierIfPresent(node)
+              ignore advanceCursor();
+              #ok(#Anchor(anchorType))
             };
             case (#CharacterClass(isNegated, classes)) {
-              // Convert classes to AST nodes
-              let astClasses = Array.map<Types.CharacterClass, AST>(classes, characterClassElementToAST);
-              let node = #CharacterClass({
-                isNegated = isNegated;
-                classes = astClasses;
-              });
-              parseQuantifierIfPresent(node)
-            };
-            case (#Group(groupData)) {
-              // Parse the group's subTokens into an AST
-              let groupResult = parseGroup(groupData);
-              switch (groupResult) {
-                case (#ok(groupNode)) {
-                  #ok(groupNode)
+              ignore advanceCursor();
+              switch (validateCharacterClass(classes)) {
+                case (#err(error)) { return #err(error) };
+                case (#ok()) {
+                  let astClasses = Array.map<Types.CharacterClass, AST>(
+                    classes, 
+                    characterClassElementToAST
+                  );
+                  parseQuantifierIfPresent(#CharacterClass({
+                    isNegated = isNegated;
+                    classes = astClasses;
+                  }))
                 };
-                case (#err(error)) { #err(error) };
               };
             };
+            case (#Group(groupData)) {
+              ignore advanceCursor();
+              parseGroup(groupData)
+            };
             case (_) {
-              #err(#GenericError("Unexpected token: " # debug_show(token.tokenType)))
+              #err(#UnexpectedToken(token.tokenType))
             };
           }
         };
@@ -138,7 +188,159 @@ module {
       }
     };
 
-    // Helper function to convert CharacterClass elements to AST nodes
+    private func validateCharacterClass(classes: [Types.CharacterClass]): Result.Result<(), ParserError> {
+      if (classes.size() == 0) {
+        return #err(#GenericError("Empty character class"));
+      };
+
+      for (cclass in classes.vals()) {
+        switch (cclass) {
+          case (#Range(start, end)) {
+            if (Char.toNat32(start) > Char.toNat32(end)) {
+              return #err(#GenericError("Invalid character range: " # debug_show(start) # "-" # debug_show(end)));
+            };
+          };
+          case (#Quantified(_, quantifier)) {
+            if (quantifier.min > maxQuantifier) {
+              return #err(#InvalidQuantifier("Quantifier min value too large"));
+            };
+            switch (quantifier.max) {
+              case (?max) {
+                if (max > maxQuantifier or max < quantifier.min) {
+                  return #err(#InvalidQuantifier("Invalid quantifier range"));
+                };
+              };
+              case (null) {};
+            };
+          };
+          case (_) {};
+        };
+      };
+      #ok()
+    };
+
+    private func parseGroup(groupData: {
+      modifier: ?Types.GroupModifierType; 
+      subTokens: [Token]; 
+      quantifier: ?Types.QuantifierType
+    }): Result.Result<AST, ParserError> {
+      // Validate group data
+      switch (groupData.quantifier) {
+        case (?quantifier) {
+          if (quantifier.min > maxQuantifier) {
+            return #err(#InvalidQuantifier("Group quantifier min value too large"));
+          };
+          switch (quantifier.max) {
+            case (?max) {
+              if (max > maxQuantifier or max < quantifier.min) {
+                return #err(#InvalidQuantifier("Invalid group quantifier range"));
+              };
+            };
+            case (null) {};
+          };
+        };
+        case (null) {};
+      };
+
+      // Save parser state
+      let savedTokens = tokens;
+      let savedCursor = cursor;
+      let savedCaptureIndex = captureGroupIndex;
+
+      // Parse group contents
+      tokens := groupData.subTokens;
+      cursor := 0;
+
+      let result = parseAlternation();
+
+      // Restore parser state
+      tokens := savedTokens;
+      cursor := savedCursor;
+
+      switch (result) {
+        case (#ok(groupNode)) {
+          let isCapturing = switch (groupData.modifier) {
+            case (?#NonCapturing) { false };
+            case (_) { true };
+          };
+
+          let currentCaptureIndex = if (isCapturing) {
+            let index = captureGroupIndex;
+            captureGroupIndex += 1;
+            ?index
+          } else {
+            null
+          };
+
+          let groupAST = #Group({
+            subExpr = groupNode;
+            modifier = groupData.modifier;
+            captureIndex = currentCaptureIndex;
+          });
+
+          switch (groupData.quantifier) {
+            case (?quantifier) {
+              #ok(#Quantifier({
+                subExpr = groupAST;
+                quantifier = quantifier;
+              }))
+            };
+            case (null) {
+              #ok(groupAST)
+            };
+          }
+        };
+        case (#err(error)) { 
+          captureGroupIndex := savedCaptureIndex;
+          #err(error) 
+        };
+      }
+    };
+
+   private func parseQuantifierIfPresent(astNode: AST): Result.Result<AST, ParserError> {
+  if (cursor < tokens.size()) {
+    switch (tokens[cursor].tokenType) {
+      case (#Quantifier(quantifier)) {
+        switch (astNode) {
+          case (#Anchor(_)) {
+            #err(#GenericError("Cannot apply quantifier to an anchor"))
+          };
+          case (#Group({ modifier = ?_; subExpr =_; })) {
+            #err(#GenericError("Cannot apply quantifier to a lookaround assertion"))
+          };
+          case (#Quantifier(_)) {
+            #err(#GenericError("Cannot directly quantify a quantified expression"))
+          };
+          case (_) {
+            if (quantifier.min > maxQuantifier) {
+              return #err(#InvalidQuantifier("Quantifier min value too large"));
+            };
+            switch (quantifier.max) {
+              case (?max) {
+                if (max > maxQuantifier or max < quantifier.min) {
+                  return #err(#InvalidQuantifier("Invalid quantifier range"));
+                };
+              };
+              case (null) {};
+            };
+            ignore advanceCursor();
+            #ok(#Quantifier({
+              subExpr = astNode;
+              quantifier = quantifier;
+            }))
+          };
+        }
+      };
+      case (_) {
+        #ok(astNode)
+      };
+    }
+  } else {
+    #ok(astNode)
+  }
+};
+
+
     private func characterClassElementToAST(classElement: Types.CharacterClass): AST {
       switch (classElement) {
         case (#Single(char)) {
@@ -157,79 +359,6 @@ module {
             quantifier = quantifier;
           })
         };
-      }
-    };
-
-    // Parses a group by recursively parsing its subTokens
-    private func parseGroup(groupData: {modifier: ?Types.GroupModifierType; subTokens: [Token]; quantifier: ?Types.QuantifierType}): Result.Result<AST, ParserError> {
-      // Save current state
-      let savedTokens = tokens;
-      let savedCursor = cursor;
-
-      // Set new state for parsing the group
-      tokens := groupData.subTokens;
-      cursor := 0;
-
-      // Parse the group
-      let result = parseAlternation();
-
-      // Restore previous state
-      tokens := savedTokens;
-      cursor := savedCursor;
-
-      // Apply quantifier if present in groupData
-      switch (result) {
-        case (#ok(groupNode)) {
-          let isCapturing = switch (groupData.modifier) {
-            case (?#NonCapturing) { false };
-            case (_) { true };
-          };
-          let currentCaptureIndex = if (isCapturing) {
-            let index = captureGroupIndex;
-            captureGroupIndex += 1;
-            ?index
-          } else {
-            null
-          };
-          let groupAST = #Group({
-            subExpr = groupNode;
-            modifier = groupData.modifier;
-            captureIndex = currentCaptureIndex;
-          });
-
-          switch (groupData.quantifier) {
-            case (?quantifier) {
-              #ok(#Quantifier({
-                subExpr = groupAST;
-                quantifier = quantifier;
-              }))
-            };
-            case null {
-              #ok(groupAST)
-            };
-          }
-        };
-        case (#err(error)) { #err(error) };
-      }
-    };
-
-    // Parses quantifiers if present in the next token
-    private func parseQuantifierIfPresent(astNode: AST): Result.Result<AST, ParserError> {
-      if (cursor < tokens.size()) {
-        switch (tokens[cursor].tokenType) {
-          case (#Quantifier(quantifier)) {
-            ignore advanceCursor(); // Consume the quantifier token
-            #ok(#Quantifier({
-              subExpr = astNode;
-              quantifier = quantifier;
-            }))
-          };
-          case (_) {
-            #ok(astNode)
-          };
-        }
-      } else {
-        #ok(astNode)
       }
     };
 
