@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.1.0...v1.2.0) (2024-11-05)
+
+
+### Features
+
+* **Compiler:** Complete reversion to Thompson Construction ([43368c8](https://github.com/Demali-876/motoko_regex_engine/commit/43368c84940f38c17eea8dc71c0c3d8ada7f034c))
+
 # [1.1.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.0.4...v1.1.0) (2024-11-04)
 
 
