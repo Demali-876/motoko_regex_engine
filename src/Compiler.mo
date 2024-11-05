@@ -1,8 +1,6 @@
 import Types "Types";
 import Buffer "mo:base/Buffer";
-import Order "mo:base/Order";
 import Iter "mo:base/Iter";
-import Char "mo:base/Char";
 import Array "mo:base/Array";
 import Extensions "Extensions";
 import Optimizer "Optimizer";
@@ -40,6 +38,7 @@ module {
 
     public func buildNFA(ast: Types.ASTNode, startState: State): Result.Result<([Transition], [State]), CompilerError> {
       switch (ast) {
+
         case (#Character(char)) {
           let acceptState: State = startState + 1;
           let symbol: Symbol = #Char(char);
@@ -76,168 +75,220 @@ module {
           #ok(Buffer.toArray(transitionBuffer), [acceptState])
         };
         case (#Quantifier({ subExpr; quantifier = { min; max; mode=_; } })) {
-  switch (min, max) {
-    case (0, null) { // * (zero or more)
-      switch(buildNFA(subExpr, startState)) {
-        case (#err(e)) #err(e);
-        case (#ok(subTransitions, _)) {
-          let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size() + 3);
-          
-          // Add subexpression transitions
-          for (t in subTransitions.vals()) {
-            transitionBuffer.add(t);
-          };
-          
-          // Add epsilon from start state to accept state for zero case
-          transitionBuffer.add((startState, #Epsilon, startState + 1));
-          
-          // Add epsilon from accept state back to start for repetition
-          transitionBuffer.add((startState + 1, #Epsilon, startState));
-          
-          #ok(Buffer.toArray(transitionBuffer), [startState, startState + 1])
-        };
-      }
-    };
-
-    case (1, null) { // + (one or more)
-      switch(buildNFA(subExpr, startState)) {
-        case (#err(e)) #err(e);
-        case (#ok(subTransitions, _)) {
-          let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size() + 1);
-          
-          // Add the subexpression transitions
-          for (t in subTransitions.vals()) {
-            transitionBuffer.add(t);
-          };
-          
-          // Add epsilon from accept state back to start for repetition
-          transitionBuffer.add((startState + 1, #Epsilon, startState));
-          
-          #ok(Buffer.toArray(transitionBuffer), [startState + 1])
-        };
-      }
-    };
-
-    case (0, ?1) { // ? (zero or one)
-      switch(buildNFA(subExpr, startState)) {
-        case (#err(e)) #err(e);
-        case (#ok(subTransitions, _)) {
-          let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size() + 1);
-          
-          // Add subexpression transitions
-          for (t in subTransitions.vals()) {
-            transitionBuffer.add(t);
-          };
-          
-          // Add epsilon from start to accept for zero case
-          transitionBuffer.add((startState, #Epsilon, startState + 1));
-          
-          #ok(Buffer.toArray(transitionBuffer), [startState, startState + 1])
-        };
-      }
-    };
-
-    case (n, ?m) { // Fixed count {n} or range {n,m}
-      if (n == m) { // Fixed count {n}
-        var currentState = startState;
-        let transitionBuffer = Buffer.Buffer<Transition>(n * 2);
-        
-        // Build n copies of the subexpression
-        for (i in Iter.range(0, n-1)) {
-          switch(buildNFA(subExpr, currentState)) {
-            case (#err(e)) return #err(e);
-            case (#ok(subTransitions, _)) {
-              for (t in subTransitions.vals()) {
-                transitionBuffer.add(t);
+        switch (min, max) {
+          case (0, null) { // * (zero or more)
+            switch(buildNFA(subExpr, startState)) {
+              case (#err(e)) #err(e);
+              case (#ok(subTransitions, _)) {
+                let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                
+                // Add transitions that loop back to start state
+                for (t in subTransitions.vals()) {
+                  transitionBuffer.add((startState, t.1, startState));
+                };
+                
+                // Start state is accepting since we can match zero occurrences
+                #ok(Buffer.toArray(transitionBuffer), [startState])
               };
-              currentState += 1;
-            };
+            }
           };
-        };
-        
-        #ok(Buffer.toArray(transitionBuffer), [currentState])
-      } else if (n < m) { // Range {n,m}
-        var currentState = startState;
-        let transitionBuffer = Buffer.Buffer<Transition>(m * 2);
-        let acceptStates = Buffer.Buffer<State>(m - n + 1);
-        
-        // Build required n states
-        for (i in Iter.range(0, n-1)) {
-          switch(buildNFA(subExpr, currentState)) {
-            case (#err(e)) return #err(e);
-            case (#ok(subTransitions, _)) {
-              for (t in subTransitions.vals()) {
-                transitionBuffer.add(t);
+
+          case (1, null) { // + (one or more)
+            switch(buildNFA(subExpr, startState)) {
+              case (#err(e)) #err(e);
+              case (#ok(subTransitions, _)) {
+                let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size() * 2);
+                
+                // Add initial transitions to state 1
+                for (t in subTransitions.vals()) {
+                  transitionBuffer.add((startState, t.1, startState + 1));
+                };
+                
+                // Add looping transitions at state 1
+                for (t in subTransitions.vals()) {
+                  transitionBuffer.add((startState + 1, t.1, startState + 1));
+                };
+                
+                #ok(Buffer.toArray(transitionBuffer), [startState + 1])
               };
-              currentState += 1;
-            };
+            }
           };
-        };
-        
-        // Add accept state for n
-        acceptStates.add(currentState);
-        
-        // Build optional states from n+1 to m
-        for (i in Iter.range(n, m-1)) {
-          switch(buildNFA(subExpr, currentState)) {
-            case (#err(e)) return #err(e);
-            case (#ok(subTransitions, _)) {
-              for (t in subTransitions.vals()) {
-                transitionBuffer.add(t);
+
+          case (0, ?1) { // ? (zero or one)
+            switch(buildNFA(subExpr, startState)) {
+              case (#err(e)) #err(e);
+              case (#ok(subTransitions, _)) {
+                let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                
+                // Add transitions to accepting state
+                for (t in subTransitions.vals()) {
+                  transitionBuffer.add((startState, t.1, startState + 1));
+                };
+                
+                // Both states are accepting since we can match zero or one
+                #ok(Buffer.toArray(transitionBuffer), [startState, startState + 1])
               };
-              currentState += 1;
+            }
+          };
+
+          case (n, ?m) { // Fixed count {n} or range {n,m}
+            if (n == m) { // Fixed count {n}
+              var currentState = startState;
+              let transitionBuffer = Buffer.Buffer<Transition>(n * 2);
+              
+              // Build n copies of the subexpression
+              for (i in Iter.range(0, n-1)) {
+                switch(buildNFA(subExpr, currentState)) {
+                  case (#err(e)) return #err(e);
+                  case (#ok(subTransitions, _)) {
+                    for (t in subTransitions.vals()) {
+                      transitionBuffer.add((currentState, t.1, currentState + 1));
+                    };
+                    currentState += 1;
+                  };
+                };
+              };
+              
+              #ok(Buffer.toArray(transitionBuffer), [currentState])
+            } else if (n < m) { // Range {n,m}
+              var currentState = startState;
+              let transitionBuffer = Buffer.Buffer<Transition>(m * 2);
+              let acceptStates = Buffer.Buffer<State>(m - n + 1);
+              
+              // Build states up to n
+              for (i in Iter.range(0, n-1)) {
+                switch(buildNFA(subExpr, currentState)) {
+                  case (#err(e)) return #err(e);
+                  case (#ok(subTransitions, _)) {
+                    for (t in subTransitions.vals()) {
+                      transitionBuffer.add((currentState, t.1, currentState + 1));
+                    };
+                    currentState += 1;
+                  };
+                };
+              };
+              
+              // Add states from n to m, all accepting
               acceptStates.add(currentState);
-            };
+              for (i in Iter.range(n, m-1)) {
+                switch(buildNFA(subExpr, currentState)) {
+                  case (#err(e)) return #err(e);
+                  case (#ok(subTransitions, _)) {
+                    for (t in subTransitions.vals()) {
+                      transitionBuffer.add((currentState, t.1, currentState + 1));
+                    };
+                    currentState += 1;
+                    acceptStates.add(currentState);
+                  };
+                };
+              };
+              
+              #ok(Buffer.toArray(transitionBuffer), Buffer.toArray(acceptStates))
+            } else {
+              #err(#InvalidQuantifier("Minimum count cannot be greater than maximum"))
+            }
           };
-        };
-        
-        #ok(Buffer.toArray(transitionBuffer), Buffer.toArray(acceptStates))
-      } else {
-        #err(#InvalidQuantifier("Minimum count cannot be greater than maximum"))
-      }
-    };
 
-    case (n, null) { // {n,} - n or more
-      var currentState = startState;
-      let transitionBuffer = Buffer.Buffer<Transition>(n * 2);
-      
-      // Build required n states
-      for (i in Iter.range(0, n-1)) {
-        switch(buildNFA(subExpr, currentState)) {
-          case (#err(e)) return #err(e);
-          case (#ok(subTransitions, _)) {
-            for (t in subTransitions.vals()) {
-              transitionBuffer.add(t);
+          case (n, null) { // {n,} - n or more
+            var currentState = startState;
+            let transitionBuffer = Buffer.Buffer<Transition>(n * 2);
+            
+            // Build first n states
+            for (i in Iter.range(0, n-1)) {
+              switch(buildNFA(subExpr, currentState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(subTransitions, _)) {
+                  for (t in subTransitions.vals()) {
+                    transitionBuffer.add((currentState, t.1, currentState + 1));
+                  };
+                  currentState += 1;
+                };
+              };
             };
-            currentState += 1;
+            
+            // Add final state that loops back on itself
+            switch(buildNFA(subExpr, currentState)) {
+              case (#err(e)) #err(e);
+              case (#ok(subTransitions, _)) {
+                for (t in subTransitions.vals()) {
+                  transitionBuffer.add((currentState, t.1, currentState));
+                };
+                #ok(Buffer.toArray(transitionBuffer), [currentState])
+              };
+            }
           };
-        };
+        }
       };
-      
-      // Add plus behavior after n states
-      switch(buildNFA(subExpr, currentState)) {
-        case (#err(e)) #err(e);
-        case (#ok(subTransitions, _)) {
-          for (t in subTransitions.vals()) {
-            transitionBuffer.add(t);
-          };
-          // Add epsilon transition for repetition
-          transitionBuffer.add((currentState + 1, #Epsilon, currentState));
-          #ok(Buffer.toArray(transitionBuffer), [currentState + 1])
-        };
-      }
-    };
-  }
-};
         case (#Anchor(_)) {
           // No need to create states or transitions
           // Just return empty transitions with current state as accept state
           // The matcher will handle the anchor checking
           #ok([] : [Transition], [startState])
         };
-        
-        case (_) {
-          #err(#UnsupportedASTNode("AST node is not recognizable/Unsupported"))
+        case (#Alternation(alternatives)) {
+        switch(alternatives.size()) {
+          case 0 return #err(#GenericError("Empty alternation"));
+          case 1 return buildNFA(alternatives[0], startState);
+          case _ {
+            let transitionBuffer = Buffer.Buffer<Transition>(16);
+            var currentState = startState;
+            var acceptStates = Buffer.Buffer<State>(alternatives.size());
+            
+            // Build NFA for each alternative
+            for (alt in alternatives.vals()) {
+              switch(buildNFA(alt, currentState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(transitions, altAccepts)) {
+                  // Add all transitions for this alternative
+                  for (t in transitions.vals()) {
+                    transitionBuffer.add(t);
+                  };
+                  
+                  // Add accept states
+                  for (accept in altAccepts.vals()) {
+                    acceptStates.add(accept);
+                  };
+                  
+                  // Update current state for next alternative
+                  currentState += transitions.size() + 1;
+                };
+              };
+            };
+            
+            #ok(Buffer.toArray(transitionBuffer), Buffer.toArray(acceptStates))
+          };
+        }
+      };
+        case (#Concatenation(exprs)) {
+          switch(exprs.size()) {
+            case 0 return #err(#GenericError("Empty concatenation"));
+            case 1 return buildNFA(exprs[0], startState);
+            case _ {
+              var currentState = startState;
+              let transitionBuffer = Buffer.Buffer<Transition>(exprs.size());
+              
+              // Build NFA for each expression in sequence
+              for (i in Iter.range(0, exprs.size() - 1)) {
+                switch(buildNFA(exprs[i], currentState)) {
+                  case (#err(e)) return #err(e);
+                  case (#ok(transitions, _)) {
+                    // Add transitions for this expression
+                    for (t in transitions.vals()) {
+                      transitionBuffer.add(t);
+                    };
+                    currentState += 1;
+                  };
+                };
+              };
+              
+              // Only the final state is accepting
+              #ok(Buffer.toArray(transitionBuffer), [currentState])
+            };
+          }
+        };
+        case (#Group({ subExpr; modifier = _; captureIndex = _ })) {
+          // Just process the subexpression - grouping is handled by matcher
+          buildNFA(subExpr, startState)
         };
       }
     };
