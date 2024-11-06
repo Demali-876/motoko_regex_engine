@@ -5,6 +5,7 @@ import Result "mo:base/Result";
 import Extensions "../Extensions";
 import Types "../Types";
 import Debug "mo:base/Debug";
+import Regex "../lib"
 
 actor {
     type Token = Types.Token;
@@ -38,23 +39,18 @@ actor {
         case (#err(error)) {
             #err((error))
         };
-        
         case (#ok(tokens)) {
             let parser = Parser.Parser(tokens);
-            
             switch (parser.parse()) {
                 case (#err(error)) {
                     #err((error))
                 };
-                
                 case (#ok(ast)) {
                     let compiler = Compiler.Compiler();
-                    
                     switch (compiler.compile(ast)) {
                         case (#err(error)) {
                             #err((error))
                         };
-                        
                         case (#ok(compiledRegex)) {
                             #ok(compiledRegex)
                         };
@@ -62,6 +58,17 @@ actor {
                 };
             }
         };
-    }
-  }
+    };
+  };
+  public query func testMatch(): async Result.Result<Types.Match, Types.RegexError> {
+    let regex = Regex.Regex("abc", null);
+    switch(regex.match("abcdef")) {
+        case (#ok(result)) {
+            #ok(result)
+        };
+        case (#err(e)) {
+            #err(e)
+        };
+    };
+};
 };
