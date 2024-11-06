@@ -243,7 +243,7 @@ module{
       arr[i];
     };
 
-    //slice a text 
+    //slice a text with optional end
     public func slice(text : Text, start : Nat, end : ?Nat) : Text {
       let chars = Text.toArray(text);
       let slicedChars = switch (end) {
@@ -265,6 +265,16 @@ module{
         return [];
     };
     Array.tabulate<T>(end - start, func(i:Nat) { arr[start + i] })
+    };
+
+    public func substring(text: Text, start: Nat, end: Nat) : Text {
+    let chars = Text.toArray(text);
+    // Assert valid indices if start equals end, return empty text
+    assert(start <= end);
+    assert(end <= chars.size());
+    if (start == end) return "";
+    
+    Text.fromIter(Array.slice<Char>(chars, start, end));
     };
     //Error handling
     public func errorToText(error: Types.RegexError): Text {
