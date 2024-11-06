@@ -25,9 +25,20 @@ module {
             #err(#EmptyExpression("No accept states generated"))
           } else {
             let maxState = Extensions.getMaxState(transitionTable, acceptStates, startState);
+            // Create array of transition arrays, indexed by state
+            let transitionsByState = Array.tabulate<[Transition]>(maxState + 1, func(state) {
+              let stateTransitions = Buffer.Buffer<Transition>(4);
+              for (t in transitionTable.vals()) {
+                if (t.0 == state) {
+                  stateTransitions.add(t);
+                };
+              };
+              Buffer.toArray(stateTransitions)
+            });
             #ok({
               states = Array.tabulate<State>(maxState + 1, func(i) = i);
               transitions = transitionTable;
+              transitionsByState = transitionsByState;
               startState = startState;
               acceptStates = acceptStates;
             })
