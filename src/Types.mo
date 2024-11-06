@@ -110,9 +110,7 @@ module{
       #EmptyExpression: Text;
       #UnsupportedASTNode: Text;
       #InvalidTransition: Text;
-      #LabelLimitExceeded: Text;
-      #StateOverflow: Text;
-      #InvalidState: Text;
+      #NotCompiled
   };
   //NFA Types
   public type State = Nat;
@@ -127,24 +125,24 @@ module{
   public type CompiledRegex = {
     states : [State];
     transitions : [Transition];
+    transitionsByState : [[Transition]];
     startState : State;
     acceptStates : [State];
   };
   //Matcher Types
-  public type MatchResult = {
-    status: MatchStatus;
-    start: Nat;
-    end: Nat;
+  public type Match = {
+    status: Status;
+    position: (Nat, Nat);
     value: Text;
     capturedGroups: CapturedGroups;
   };
   public type CapturedGroups = ?[?Text];
-  public type MatchStatus = {
+  public type Status = {
     #FullMatch;
     #PartialMatch;
     #NoMatch;
   };
-  public type MatchFlags = {
+  public type Flags = {
   caseInsensitive : ?Bool;
   multiline: ?Bool;
   };
