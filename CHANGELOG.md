@@ -1,3 +1,16 @@
+# [1.3.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.2.0...v1.3.0) (2024-11-06)
+
+
+### Features
+
+* **Extensions:** substring text function. ([9b8a8f0](https://github.com/Demali-876/motoko_regex_engine/commit/9b8a8f062349ed5e583875d731a1aa2d19e1171d))
+* **lib:** Regex class ([b754e3d](https://github.com/Demali-876/motoko_regex_engine/commit/b754e3d0c3d8b62d57e181474d3786d48fa48299))
+
+
+### Performance Improvements
+
+* **Compiler:** improved handling of edge cases. ([d43281b](https://github.com/Demali-876/motoko_regex_engine/commit/d43281b62bc4254f213d8ca63f07197c81d01abd))
+
 # [1.2.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.1.0...v1.2.0) (2024-11-05)
 
 
