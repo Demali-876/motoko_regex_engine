@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.6.0...v1.7.0) (2024-11-12)
+
+
+### Features
+
+* **Extension:** new help function + refractor ([6e162e5](https://github.com/Demali-876/motoko_regex_engine/commit/6e162e58fb5dcc6508c92f77c9e47f73dc02c7d2))
+
 # [1.6.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.5.0...v1.6.0) (2024-11-12)
 
 
