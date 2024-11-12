@@ -117,7 +117,6 @@ module{
   public type Symbol ={
     #Range : (Char, Char);
     #Char :Char;
-    #Epsilon;
   };
   public type Transition = (State, Symbol, State);
   
@@ -129,21 +128,22 @@ module{
     startState : State;
     acceptStates : [State];
   };
+
   //Matcher Types
   public type Match = {
-    status: Status;
-    position: (Nat, Nat);
+    string: Text;
     value: Text;
-    capturedGroups: CapturedGroups;
+    status: {
+        #FullMatch;
+        #NoMatch;
+    };
+    position: (Nat, Nat);
+    capturedGroups: ?[?Text];
+    spans: [(Nat, Nat)];
+    lastIndex: Nat;
   };
-  public type CapturedGroups = ?[?Text];
-  public type Status = {
-    #FullMatch;
-    #PartialMatch;
-    #NoMatch;
-  };
-  public type Flags = {
-  caseInsensitive : ?Bool;
-  multiline: ?Bool;
+public type Flags = {
+    caseInsensitive: ?Bool;
+    multiline: ?Bool;
   };
 }

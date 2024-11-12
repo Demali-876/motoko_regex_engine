@@ -11,6 +11,7 @@ module {
   type Match = Types.Match;
   type Flags = Types.Flags;
   type RegexError = Types.RegexError;
+  
 
   public class Regex(pattern: Pattern, flags: ?Flags) {
     private var compiler = Compiler.Compiler();

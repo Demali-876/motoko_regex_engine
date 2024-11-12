@@ -242,7 +242,26 @@ module{
       let arr = Text.toArray(t);
       arr[i];
     };
-
+    public func isValidEscapeSequence(char: Char, inClass: Bool) : Bool {
+    if (inClass) {
+        // Only allow specific escapes in character classes
+        switch(char) {
+            case ('d' or 'D' or 'w' or 'W' or 's' or 'S' or
+                 '[' or ']' or '^' or '-' or '\\') { true };
+            case _ { false };
+        };
+    } else {
+        // Normal context escapes
+        switch(char) {
+            case ('w' or 'W' or 'd' or 'D' or 's' or 'S' or 
+                 'b' or 'B' or 'A' or 'z' or 'G' or 
+                 '(' or ')' or '[' or ']' or '{' or '}' or 
+                 '*' or '+' or '?' or '.' or '^' or '$' or 
+                 '|' or '\\') { true };
+            case _ { false };
+            };
+        };
+    };
     //slice a text with optional end
     public func slice(text : Text, start : Nat, end : ?Nat) : Text {
       let chars = Text.toArray(text);
@@ -295,7 +314,14 @@ module{
         case (#InvalidState(text)) "Invalid state: " # text;
     };
     };
-
+    public func isReservedSymbol(char: Char) : Bool {
+    switch char {
+        case ('(' or ')' or '[' or ']' or '{' or '}' or 
+             '*' or '+' or '?' or '.' or '^' or '$' or 
+             '|' or '\\') { true };
+        case _ { false };
+        }
+    };
     //replace an element of a buffer given an index
     public func replace<T>(buffer: Buffer.Buffer<T>, index: Nat, newElement: T) {
     if (index >= buffer.size()) {
@@ -304,6 +330,15 @@ module{
     ignore buffer.remove(index);
     buffer.insert(index, newElement);
   };
+  public func containsState(array: [Nat], state: Nat): Bool {
+        for (item in array.vals()) {
+            if (item == state) {
+                return true;
+            };
+        };
+        false
+    };
+    
     public func textToNat( txt : Text) : Nat {
         assert(txt.size() > 0);
         let chars = txt.chars();

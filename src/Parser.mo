@@ -5,17 +5,14 @@ import Array "mo:base/Array";
 import Char "mo:base/Char";
 
 module {
-  public type ParserError = Types.RegexError;
-  public type Token = Types.Token;
-  public type AST = Types.AST;
 
-  public class Parser(initialTokens: [Token]) {
+  public class Parser(initialTokens: [Types.Token]) {
     var tokens = initialTokens;
     var cursor : Nat = 0;
     var captureGroupIndex = 1;
     let maxQuantifier : Nat = 1000; 
 
-    public func parse(): Result.Result<AST, ParserError> {
+    public func parse(): Result.Result<Types.AST, Types.RegexError> {
       cursor := 0;
       captureGroupIndex := 1;
       
@@ -33,8 +30,8 @@ module {
       result
     };
 
-    private func parseAlternation(): Result.Result<AST, ParserError> {
-      var nodes: [AST] = [];
+    private func parseAlternation(): Result.Result<Types.AST, Types.RegexError> {
+      var nodes: [Types.AST] = [];
       
       // Parse first expression
       switch (parseConcatenation()) {
@@ -86,8 +83,8 @@ module {
       }
     };
 
-    private func parseConcatenation(): Result.Result<AST, ParserError> {
-      var nodes: [AST] = [];
+    private func parseConcatenation(): Result.Result<Types.AST, Types.RegexError> {
+      var nodes: [Types.AST] = [];
       
       switch (peekToken()) {
         case (?token) {
@@ -141,7 +138,7 @@ module {
       }
     };
 
-    private func parseSingleExpression(): Result.Result<AST, ParserError> {
+    private func parseSingleExpression(): Result.Result<Types.AST, Types.RegexError> {
   switch (peekToken()) {
     case (?token) {
       switch (token.tokenType) {
@@ -162,7 +159,7 @@ module {
           switch (validateCharacterClass(classes)) {
             case (#err(error)) { return #err(error) };
             case (#ok()) {
-              let astClasses = Array.map<Types.CharacterClass, AST>(
+              let astClasses = Array.map<Types.CharacterClass, Types.AST>(
                 classes, 
                 characterClassElementToAST
               );
@@ -195,7 +192,7 @@ module {
   }
 };
 
-    private func validateCharacterClass(classes: [Types.CharacterClass]): Result.Result<(), ParserError> {
+    private func validateCharacterClass(classes: [Types.CharacterClass]): Result.Result<(), Types.RegexError> {
       if (classes.size() == 0) {
         return #err(#GenericError("Empty character class"));
       };
@@ -228,9 +225,9 @@ module {
 
     private func parseGroup(groupData: {
         modifier: ?Types.GroupModifierType; 
-        subTokens: [Token]; 
+        subTokens: [Types.Token]; 
         quantifier: ?Types.QuantifierType
-    }): Result.Result<AST, ParserError> {
+    }): Result.Result<Types.AST, Types.RegexError> {
         // Validate group data
         switch (groupData.quantifier) {
             case (?quantifier) {
@@ -308,7 +305,7 @@ module {
     };
 
 
-   private func parseQuantifierIfPresent(astNode: AST): Result.Result<AST, ParserError> {
+   private func parseQuantifierIfPresent(astNode: Types.AST): Result.Result<Types.AST, Types.RegexError> {
   if (cursor < tokens.size()) {
     switch (tokens[cursor].tokenType) {
       case (#Quantifier(quantifier)) {
@@ -352,7 +349,7 @@ module {
 };
 
 
-    private func characterClassElementToAST(classElement: Types.CharacterClass): AST {
+    private func characterClassElementToAST(classElement: Types.CharacterClass): Types.AST {
       switch (classElement) {
         case (#Single(char)) {
           #Character(char)
@@ -373,7 +370,7 @@ module {
       }
     };
 
-    private func peekToken(): ?Token {
+    private func peekToken(): ?Types.Token {
       if (cursor < tokens.size()) {
         ?tokens[cursor]
       } else {
@@ -381,7 +378,7 @@ module {
       }
     };
 
-    private func advanceCursor(): ?Token {
+    private func advanceCursor(): ?Types.Token {
       if (cursor < tokens.size()) {
         let token = tokens[cursor];
         cursor += 1;
