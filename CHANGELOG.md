@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.4.0...v1.5.0) (2024-11-12)
+
+
+### Features
+
+* **matcher:** Introduction of debug mode ([768fa3f](https://github.com/Demali-876/motoko_regex_engine/commit/768fa3fb1574c66e967351e4d8635bce98e5f89b))
+
 # [1.4.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.3.0...v1.4.0) (2024-11-12)
 
 
