@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.3.0...v1.4.0) (2024-11-12)
+
+
+### Features
+
+* **lexer:** improve validation and error handling ([883a409](https://github.com/Demali-876/motoko_regex_engine/commit/883a409f1aca1102e85179d54acc8e8ec98142e5))
+
 # [1.3.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.2.0...v1.3.0) (2024-11-06)
 
 
