@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.5.0...v1.6.0) (2024-11-12)
+
+
+### Performance Improvements
+
+* **complier:** state compression for alternation ([b628934](https://github.com/Demali-876/motoko_regex_engine/commit/b6289345cc185e720ed76a028318d1f11fc041c0))
+
 # [1.5.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.4.0...v1.5.0) (2024-11-12)
 
 
