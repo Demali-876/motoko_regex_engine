@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.7.0...v1.8.0) (2024-11-13)
+
+
+### Features
+
+* **Types:** assertion collection ([4ca1984](https://github.com/Demali-876/motoko_regex_engine/commit/4ca1984377b94d8d2cb693f294a9680334b778e7))
+
 # [1.7.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.6.0...v1.7.0) (2024-11-12)
 
 
