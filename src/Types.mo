@@ -120,13 +120,25 @@ module{
   };
   public type Transition = (State, Symbol, State);
   
-
+  public type Assertion = {
+      assertion: {
+        #Anchor: AnchorType;
+        #Lookaround: {
+          expr: AST;
+          isPositive: Bool;
+          isAhead: Bool;
+        };
+      };
+      position: Nat;
+      captureIndex: ?Nat;
+  };
   public type CompiledRegex = {
     states : [State];
     transitions : [Transition];
-    transitionsByState : [[Transition]];
+    transitionTable : [[Transition]];
     startState : State;
     acceptStates : [State];
+    assertions : [Assertion];
   };
 
   //Matcher Types
