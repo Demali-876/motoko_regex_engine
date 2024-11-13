@@ -12,7 +12,7 @@ module {
   type Transition = Types.Transition;
 
   public class Compiler() {
-
+    let assertionBuffer = Buffer.Buffer<Types.Assertion>(8);
     public func compile(ast : Types.ASTNode) : Result.Result<Types.CompiledRegex, Types.RegexError> {
       let startState : State = 0;
       switch (buildNFA(ast, startState)) {
@@ -39,9 +39,10 @@ module {
             #ok({
               states = Array.tabulate<State>(maxState + 1, func(i) = i);
               transitions = transitionTable;
-              transitionsByState = transitionsByState;
+              transitionTable = transitionsByState;
               startState = startState;
-              acceptStates = acceptStates
+              acceptStates = acceptStates;
+              assertions = Buffer.toArray(assertionBuffer)
             })
           }
         }
@@ -306,11 +307,61 @@ module {
             }
           }
         };
-        case (#Group({subExpr; modifier = _; captureIndex = _})) {
-          // Just process the subexpression - grouping is handled by matcher
-          buildNFA(subExpr, startState)
+        case (#Group({subExpr; modifier; captureIndex})) {
+        switch(modifier) {
+          case (?#PositiveLookahead) {
+            assertionBuffer.add({
+              assertion = #Lookaround({
+                expr = subExpr;
+                isPositive = true;
+                isAhead = true;
+              });
+              position = startState;
+              captureIndex = captureIndex;
+            });
+            #ok([] : [Transition], [startState])
+          };
+          case (?#NegativeLookahead) {
+            assertionBuffer.add({
+              assertion = #Lookaround({
+                expr = subExpr;
+                isPositive = false;
+                isAhead = true;
+              });
+              position = startState;
+              captureIndex = captureIndex;
+            });
+            #ok([] : [Transition], [startState])
+          };
+          case (?#PositiveLookbehind) {
+            assertionBuffer.add({
+              assertion = #Lookaround({
+                expr = subExpr;
+                isPositive = true;
+                isAhead = false;
+              });
+              position = startState;
+              captureIndex = captureIndex;
+            });
+            #ok([] : [Transition], [startState])
+          };
+          case (?#NegativeLookbehind) {
+            assertionBuffer.add({
+              assertion = #Lookaround({
+                expr = subExpr;
+                isPositive = false;
+                isAhead = false;
+              });
+              position = startState;
+              captureIndex = captureIndex;
+            });
+            #ok([] : [Transition], [startState])
+          };
+          case (?#NonCapturing) buildNFA(subExpr, startState);
+          case (null) buildNFA(subExpr, startState);
+          }
         }
       }
     }
   }
-}
+};
