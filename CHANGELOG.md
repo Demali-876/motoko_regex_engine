@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.8.0...v1.9.0) (2024-11-13)
+
+
+### Performance Improvements
+
+* **complier:** assertion collection and group indexing ([dffd422](https://github.com/Demali-876/motoko_regex_engine/commit/dffd4220c8c91f999f6904c66da8f27fe3c0aa1f))
+
 # [1.8.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.7.0...v1.8.0) (2024-11-13)
 
 
