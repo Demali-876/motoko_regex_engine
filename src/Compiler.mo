@@ -219,12 +219,15 @@ module {
           }
         };
 
-        case (#Anchor(_)) {
-          // No need to create states or transitions
-          // The matcher will handle the anchor checking
+        case (#Anchor(anchor)) {
+          assertionBuffer.add({
+            assertion = #Anchor({
+              aType = anchor;
+              position = startState
+            })
+          });
           #ok([] : [Transition], [startState])
         };
-
         case (#Alternation(alternatives)) {
           switch (alternatives.size()) {
             case 0 return #err(#GenericError("Empty alternation"));
@@ -286,7 +289,6 @@ module {
                 switch (buildNFA(exprs[i], currentState)) {
                   case (#err(e)) return #err(e);
                   case (#ok(transitions, accepts)) {
-                    // Add transitions
                     for (t in transitions.vals()) {
                       transitionBuffer.add(t)
                     };
@@ -294,7 +296,7 @@ module {
                   }
                 }
               };
-              let lastIndex = exprs.size() - 1;
+              let lastIndex : Nat = exprs.size() - 1;
               switch (buildNFA(exprs[lastIndex], currentState)) {
                 case (#err(e)) return #err(e);
                 case (#ok(transitions, accepts)) {
@@ -308,60 +310,121 @@ module {
           }
         };
         case (#Group({subExpr; modifier; captureIndex})) {
-        switch(modifier) {
-          case (?#PositiveLookahead) {
-            assertionBuffer.add({
-              assertion = #Lookaround({
-                expr = subExpr;
-                isPositive = true;
-                isAhead = true;
-              });
-              position = startState;
-              captureIndex = captureIndex;
-            });
-            #ok([] : [Transition], [startState])
-          };
-          case (?#NegativeLookahead) {
-            assertionBuffer.add({
-              assertion = #Lookaround({
-                expr = subExpr;
-                isPositive = false;
-                isAhead = true;
-              });
-              position = startState;
-              captureIndex = captureIndex;
-            });
-            #ok([] : [Transition], [startState])
-          };
-          case (?#PositiveLookbehind) {
-            assertionBuffer.add({
-              assertion = #Lookaround({
-                expr = subExpr;
-                isPositive = true;
-                isAhead = false;
-              });
-              position = startState;
-              captureIndex = captureIndex;
-            });
-            #ok([] : [Transition], [startState])
-          };
-          case (?#NegativeLookbehind) {
-            assertionBuffer.add({
-              assertion = #Lookaround({
-                expr = subExpr;
-                isPositive = false;
-                isAhead = false;
-              });
-              position = startState;
-              captureIndex = captureIndex;
-            });
-            #ok([] : [Transition], [startState])
-          };
-          case (?#NonCapturing) buildNFA(subExpr, startState);
-          case (null) buildNFA(subExpr, startState);
+          switch (modifier) {
+            case (? #PositiveLookahead) {
+              switch (buildNFA(subExpr, startState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(subTransitions, subAcceptStates)) {
+                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                  for (t in subTransitions.vals()) {
+                    transitionBuffer.add(t)
+                  };
+                  assertionBuffer.add({
+                    assertion = #Lookaround({
+                      startState = startState;
+                      acceptStates = subAcceptStates;
+                      isPositive = true;
+                      isAhead = true;
+                      position = startState
+                    })
+                  });
+                  #ok(Buffer.toArray(transitionBuffer), [startState])
+                }
+              }
+            };
+            case (? #NegativeLookahead) {
+              switch (buildNFA(subExpr, startState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(subTransitions, subAcceptStates)) {
+                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                  for (t in subTransitions.vals()) {
+                    transitionBuffer.add(t)
+                  };
+                  assertionBuffer.add({
+                    assertion = #Lookaround({
+                      startState = startState;
+                      acceptStates = subAcceptStates;
+                      isPositive = false;
+                      isAhead = true;
+                      position = startState
+                    })
+                  });
+                  #ok(Buffer.toArray(transitionBuffer), [startState])
+                }
+              }
+            };
+            case (? #PositiveLookbehind) {
+              switch (buildNFA(subExpr, startState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(subTransitions, subAcceptStates)) {
+                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                  for (t in subTransitions.vals()) {
+                    transitionBuffer.add(t)
+                  };
+                  assertionBuffer.add({
+                    assertion = #Lookaround({
+                      startState = startState;
+                      acceptStates = subAcceptStates;
+                      isPositive = true;
+                      isAhead = false;
+                      position = startState
+                    })
+                  });
+                  #ok(Buffer.toArray(transitionBuffer), [startState])
+                }
+              }
+            };
+            case (? #NegativeLookbehind) {
+              switch (buildNFA(subExpr, startState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(subTransitions, subAcceptStates)) {
+                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                  for (t in subTransitions.vals()) {
+                    transitionBuffer.add(t)
+                  };
+                  assertionBuffer.add({
+                    assertion = #Lookaround({
+                      startState = startState;
+                      acceptStates = subAcceptStates;
+                      isPositive = false;
+                      isAhead = false;
+                      position = startState
+                    })
+                  });
+                  #ok(Buffer.toArray(transitionBuffer), [startState])
+                }
+              }
+            };
+            case (? #NonCapturing) {
+              buildNFA(subExpr, startState)
+            };
+            case (null) {
+              let index = switch (captureIndex) {
+                case (?i) i;
+                case null return #err(#GenericError("Capture index is null for capturing group"))
+              };
+              let groupStartState = startState;
+              switch (buildNFA(subExpr, groupStartState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(subTransitions, subAcceptStates)) {
+                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
+                  for (t in subTransitions.vals()) {
+                    transitionBuffer.add(t)
+                  };
+                  assertionBuffer.add({
+                    assertion = #Group({
+                      captureIndex = index;
+                      startState = groupStartState;
+                      endStates = subAcceptStates
+                    })
+                  });
+                  #ok(Buffer.toArray(transitionBuffer), subAcceptStates)
+                }
+              }
+            }
           }
         }
       }
     }
   }
-};
+}
