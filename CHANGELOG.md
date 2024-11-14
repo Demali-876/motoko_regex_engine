@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.9.0...v1.10.0) (2024-11-14)
+
+
+### Performance Improvements
+
+* **complier:** assertion improvements ([eb97d9a](https://github.com/Demali-876/motoko_regex_engine/commit/eb97d9aa04fdf5e44c33bf4e99f403a5901e5c8e))
+
 # [1.9.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.8.0...v1.9.0) (2024-11-13)
 
 
