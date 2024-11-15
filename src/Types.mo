@@ -121,17 +121,26 @@ module{
   public type Transition = (State, Symbol, State);
   
   public type Assertion = {
-      assertion: {
-        #Anchor: AnchorType;
-        #Lookaround: {
-          expr: AST;
-          isPositive: Bool;
-          isAhead: Bool;
-        };
-      };
-      position: Nat;
-      captureIndex: ?Nat;
+  assertion: {
+    #Anchor: {
+      aType: AnchorType;
+      position: State;
+    };
+    #Lookaround: {
+      startState: State;
+      acceptStates: [State];
+      isPositive: Bool;
+      isAhead: Bool;
+      position: State;
+    };
+    #Group: {
+      captureIndex: Nat;
+      startState: State;
+      endStates: [State];
+    };
   };
+};
+
   public type CompiledRegex = {
     states : [State];
     transitions : [Transition];
@@ -150,12 +159,12 @@ module{
         #NoMatch;
     };
     position: (Nat, Nat);
-    capturedGroups: ?[?Text];
+    capturedGroups: ?[(Text,Nat)];
     spans: [(Nat, Nat)];
     lastIndex: Nat;
   };
 public type Flags = {
-    caseInsensitive: ?Bool;
-    multiline: ?Bool;
+    caseSensitive: Bool;
+    multiline: Bool;
   };
 }
