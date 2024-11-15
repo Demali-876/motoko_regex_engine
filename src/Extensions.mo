@@ -79,7 +79,7 @@ module {
       case _ {false}
     }
   };
-
+  
   public func isValidEscapeSequence(char : Char, inClass : Bool) : Bool {
     if (inClass) {
       switch (char) {
