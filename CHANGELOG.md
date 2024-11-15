@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.11.0...v1.12.0) (2024-11-15)
+
+
+### Features
+
+* **Matcher:** search function implementented ([76887ab](https://github.com/Demali-876/motoko_regex_engine/commit/76887ab345f418c141a88027d6e80b1ceeab1e44))
+
 # [1.11.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.10.0...v1.11.0) (2024-11-15)
 
 
