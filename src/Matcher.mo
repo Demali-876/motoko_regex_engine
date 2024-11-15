@@ -338,6 +338,16 @@ module {
       };
       return #ok(Buffer.toArray(matches))
     };
-    
+    public func findIter(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Iter.Iter<Match>, MatchError> {
+      switch (findAll(nfa, text, flags)) {
+        case (#ok(matches)) {
+          let matchIter : Iter.Iter<Match> = Iter.fromArray(matches);
+          return #ok(matchIter)
+        };
+        case (#err(e)) {
+          return #err(e)
+        }
+      }
+    }
   }
 }
