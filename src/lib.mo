@@ -82,5 +82,8 @@ module {
         };
       }
     };
+    public func enableDebug(b:Bool){
+      matcher.debugMode(b);
+    }
   };
 };
