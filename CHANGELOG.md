@@ -1,3 +1,11 @@
+# [1.15.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.14.0...v1.15.0) (2024-11-15)
+
+
+### Features
+
+* **Regex API:** findIter and enableDebug api function ([bc78f20](https://github.com/Demali-876/motoko_regex_engine/commit/bc78f20b6b2f7f8917d2c0ba0f749523d0aea411))
+* **Regex API:** findIter() api function ([60e067c](https://github.com/Demali-876/motoko_regex_engine/commit/60e067cc8b29b347ec781e423d009415d535783a))
+
 # [1.14.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.13.0...v1.14.0) (2024-11-15)
 
 
