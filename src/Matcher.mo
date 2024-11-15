@@ -302,6 +302,42 @@ module {
         lastIndex = 0
       })
     };
+    public func findAll(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<[Match], MatchError> {
+      regex := nfa;
+      var startIndex = 0;
+      let textSize = text.size();
+      var matches = Buffer.Buffer<Match>(0);
+
+      while (startIndex < textSize) {
+        let remainingString : Text = substring(text, startIndex, textSize);
+        switch (search(nfa, remainingString, flags)) {
+          case (#ok(matchResult)) {
+            switch (matchResult.status) {
+              case (#FullMatch) {
+                let adjustedMatch = {
+                  string = text;
+                  value = matchResult.value;
+                  status = #FullMatch;
+                  position = (startIndex, startIndex + matchResult.position.1);
+                  capturedGroups = matchResult.capturedGroups;
+                  spans = matchResult.spans;
+                  lastIndex = startIndex + matchResult.lastIndex
+                };
+                matches.add(adjustedMatch);
+                startIndex := adjustedMatch.lastIndex
+              };
+              case (#NoMatch) {
+                startIndex += 1
+              }
+            }
+          };
+          case (#err(e)) {
+            return #err(e)
+          }
+        }
+      };
+      return #ok(Buffer.toArray(matches))
+    };
     
   }
 }
