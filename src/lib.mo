@@ -58,5 +58,13 @@ module {
         };
       }
     };
+    public func search(text: Text): Result.Result<Match, RegexError> {
+      switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+          matcher.search(compiledNFA, text, flags)
+        };
+      }
+    };
   };
 };
