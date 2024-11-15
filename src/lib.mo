@@ -74,5 +74,13 @@ module {
         };
       }
     };
+    public func findIter(text: Text): Result.Result<Iter.Iter<Match>, RegexError> {
+      switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+          matcher.findIter(compiledNFA, text, flags)
+        };
+      }
+    };
   };
 };
