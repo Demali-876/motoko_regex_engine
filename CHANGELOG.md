@@ -1,3 +1,12 @@
+# [1.13.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.12.0...v1.13.0) (2024-11-15)
+
+
+### Features
+
+* **Matcher:** findall function implementented ([c789fc7](https://github.com/Demali-876/motoko_regex_engine/commit/c789fc7df1fc12200b5b7c9da0eaaf76e83b767c))
+* **Matcher:** findIter function implementented ([3f7b09b](https://github.com/Demali-876/motoko_regex_engine/commit/3f7b09b8c502198ecaa41a75dde672e21cdfaa45))
+* **Regex API:** Compilation debugging ([92ccda0](https://github.com/Demali-876/motoko_regex_engine/commit/92ccda03e921337801a05fe23f5d5a436e84cb9f))
+
 # [1.12.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.11.0...v1.12.0) (2024-11-15)
 
 
