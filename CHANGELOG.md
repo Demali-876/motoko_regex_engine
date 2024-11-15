@@ -1,3 +1,11 @@
+# [1.14.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.13.0...v1.14.0) (2024-11-15)
+
+
+### Features
+
+* **Regex API:** findAll() api function ([18c8991](https://github.com/Demali-876/motoko_regex_engine/commit/18c8991bd4e6f93ce0a49238156a3e9de59274e9))
+* **Regex API:** seacrh api function ([6a1042b](https://github.com/Demali-876/motoko_regex_engine/commit/6a1042b458f1f6a755d5652052d11fc54a4b4fe0))
+
 # [1.13.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.12.0...v1.13.0) (2024-11-15)
 
 
