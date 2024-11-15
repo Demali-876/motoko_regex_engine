@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.10.0...v1.11.0) (2024-11-15)
+
+
+### Performance Improvements
+
+* **Types:** Assertion Node improvements ([a7d9233](https://github.com/Demali-876/motoko_regex_engine/commit/a7d9233fa8a268c6bf9e0e0cfbeeaf3641b41264))
+
 # [1.10.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.9.0...v1.10.0) (2024-11-14)
 
 
