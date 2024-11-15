@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.15.0...v1.16.0) (2024-11-15)
+
+
+### Features
+
+* **test API:** testsearch() function ([4b9c4e5](https://github.com/Demali-876/motoko_regex_engine/commit/4b9c4e5481cc641087a01316af2378ee68c09701))
+
 # [1.15.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.14.0...v1.15.0) (2024-11-15)
 
 
