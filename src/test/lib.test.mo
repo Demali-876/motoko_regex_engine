@@ -73,6 +73,16 @@ actor {
             #err(e);
         };
     };
+    };
+    public query func testFindAll(aregextext: Pattern, pattern: Text) : async Result.Result<[Types.Match], Types.RegexError> {
+    let regex = Regex.Regex(aregextext, null);
+    switch (regex.findAll(pattern)) {
+        case (#ok(matches)) {
+            #ok(matches);
+        };
+        case (#err(e)) {
+            #err(e);
+        };
+        };
     }
-
 }
