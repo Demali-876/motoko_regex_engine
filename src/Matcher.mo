@@ -326,7 +326,7 @@ module {
                   string = text;
                   value = matchResult.value;
                   status = #FullMatch;
-                  position = (startIndex, startIndex + matchResult.position.1);
+                  position = (startIndex + matchResult.position.0, startIndex + matchResult.position.1);
                   capturedGroups = matchResult.capturedGroups;
                   spans = matchResult.spans;
                   lastIndex = startIndex + matchResult.lastIndex
