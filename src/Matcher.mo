@@ -260,48 +260,56 @@ module {
         lastIndex = index
       })
     };
-    public func search(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Match, MatchError> {
+    public func search(nfa: NFA, text: Text, flags: ?Flags): Result.Result<Match, MatchError> {
       regex := nfa;
       var startIndex = 0;
       let textSize = text.size();
 
       while (startIndex < textSize) {
-        let remainingstring : Text = substring(text, startIndex, textSize);
+          let remainingstring: Text = substring(text, startIndex, textSize);
+          Debug.print("Searching from index " # Nat.toText(startIndex) # ": " # remainingstring);
 
-        switch (match(nfa, remainingstring, flags)) {
-          case (#ok(matchResult)) {
-            switch (matchResult.status) {
-              case (#FullMatch) {
-                let adjustedMatch = {
-                  string = text;
-                  value = matchResult.value;
-                  status = #FullMatch;
-                  position = (startIndex, startIndex + matchResult.position.1);
-                  capturedGroups = matchResult.capturedGroups;
-                  spans = matchResult.spans;
-                  lastIndex = startIndex + matchResult.lastIndex
-                };
-                return #ok(adjustedMatch)
+          // Call the match function
+          switch (match(nfa, remainingstring, flags)) {
+              case (#ok(matchResult)) {
+                  Debug.print("Match result: " # debug_show(matchResult));
+                  switch (matchResult.status) {
+                      case (#FullMatch) {
+                          Debug.print("Full match found at index " # Nat.toText(startIndex));
+                          let adjustedMatch = {
+                              string = text;
+                              value = matchResult.value;
+                              status = #FullMatch;
+                              position = (startIndex, startIndex + matchResult.position.1);
+                              capturedGroups = matchResult.capturedGroups;
+                              spans = matchResult.spans;
+                              lastIndex = startIndex + matchResult.lastIndex;
+                          };
+                          return #ok(adjustedMatch);
+                      };
+                      case (#NoMatch) {
+                          Debug.print("No match found at index " # Nat.toText(startIndex));
+                      };
+                  };
               };
-              case (#NoMatch) {}
-            }
+              case (#err(e)) {
+                  Debug.print("Error during match: " # debug_show(e));
+                  return #err(e);
+              };
           };
-          case (#err(e)) {
-            return #err(e)
-          }
-        };
-        startIndex += 1
+          startIndex += 1;
       };
+      Debug.print("No full match found after searching the entire text.");
       return #ok({
-        string = text;
-        value = "";
-        status = #NoMatch;
-        position = (0, 0);
-        capturedGroups = null;
-        spans = [];
-        lastIndex = 0
-      })
-    };
+          string = text;
+          value = "";
+          status = #NoMatch;
+          position = (0, 0);
+          capturedGroups = null;
+          spans = [];
+          lastIndex = 0;
+      });
+  };
     public func findAll(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<[Match], MatchError> {
       regex := nfa;
       var startIndex = 0;
