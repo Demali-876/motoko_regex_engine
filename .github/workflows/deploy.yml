@@ -24,7 +24,7 @@ jobs:
 
       - name: Build the book
         run: |
-          cd docs/book
+          cd docs
           mdbook build
 
       - name: Deploy to GitHub Pages
@@ -32,4 +32,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/book
-
