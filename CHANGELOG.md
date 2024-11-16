@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.19.0...v1.19.1) (2024-11-16)
+
+
+### Bug Fixes
+
+* **Matcher:** Position Fix ([9d29540](https://github.com/Demali-876/motoko_regex_engine/commit/9d295402d6a26b6e910c1fbf56260c57903ee2df))
+
 # [1.19.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.18.0...v1.19.0) (2024-11-16)
 
 
