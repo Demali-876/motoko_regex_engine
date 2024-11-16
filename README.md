@@ -52,7 +52,6 @@ public type Match = {
 
 public type Status = {
     #FullMatch;
-    #PartialMatch;
     #NoMatch;
 };
 ```

@@ -54,7 +54,6 @@ module {
       switch (nfa) {
         case (null) #err(#NotCompiled);
         case (?compiledNFA) {
-          matcher.debugMode(true);
           matcher.match(compiledNFA, text, flags)
         };
       }
@@ -63,7 +62,6 @@ module {
       switch (nfa) {
         case (null) #err(#NotCompiled);
         case (?compiledNFA) {
-          matcher.debugMode(true);
           matcher.search(compiledNFA, text, flags)
         };
       }
@@ -72,7 +70,6 @@ module {
       switch (nfa) {
         case (null) #err(#NotCompiled);
         case (?compiledNFA) {
-          matcher.debugMode(true);
           matcher.findAll(compiledNFA, text, flags)
         };
       }
