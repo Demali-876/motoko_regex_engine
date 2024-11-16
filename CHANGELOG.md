@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.17.0...v1.18.0) (2024-11-16)
+
+
+### Features
+
+* **Regex API:** DefaulT debug behaviour ([2c1796a](https://github.com/Demali-876/motoko_regex_engine/commit/2c1796a293cc8338a93679cd08dd7065faa247b0))
+
 # [1.17.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.16.0...v1.17.0) (2024-11-15)
 
 
