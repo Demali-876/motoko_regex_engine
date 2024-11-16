@@ -1,4 +1,4 @@
-name: Regex GitHub Pages
+name: Motoko Regex GitHub Pages
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
       - master
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout the repository
         uses: actions/checkout@v2
 
       - name: Install Rust
@@ -22,11 +22,14 @@ jobs:
       - name: Install mdBook
         run: cargo install mdbook
 
-      - name: Build mdBook
-        run: mdbook build
+      - name: Build the book
+        run: |
+          cd docs/book
+          mdbook build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./book
+          publish_dir: ./docs/book
+
