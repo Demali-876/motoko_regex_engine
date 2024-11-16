@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.18.0...v1.19.0) (2024-11-16)
+
+
+### Performance Improvements
+
+* **Mathcer:** improvements ([4734b25](https://github.com/Demali-876/motoko_regex_engine/commit/4734b258df18d9f9c6215eea33277edb8bb9c2a2))
+
 # [1.18.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.17.0...v1.18.0) (2024-11-16)
 
 
