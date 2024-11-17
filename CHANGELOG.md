@@ -1,3 +1,10 @@
+## [1.20.2](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.1...v1.20.2) (2024-11-17)
+
+
+### Bug Fixes
+
+* **mops:** lowercase name ([3a43dae](https://github.com/Demali-876/motoko_regex_engine/commit/3a43daed567d4634eafdc400e4fbe91ea9c6130c))
+
 ## [1.20.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.0...v1.20.1) (2024-11-17)
 
 
