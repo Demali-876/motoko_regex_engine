@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.0...v1.20.1) (2024-11-17)
+
+
+### Bug Fixes
+
+* **Matcher:** Handle range case transitions ([fbd5ea7](https://github.com/Demali-876/motoko_regex_engine/commit/fbd5ea71f50bfb19b8c888d9961a34100f435764))
+
 # [1.20.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.19.5...v1.20.0) (2024-11-17)
 
 
