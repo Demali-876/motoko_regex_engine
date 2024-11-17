@@ -32,6 +32,35 @@ module {
     Text.fromIter(slicedChars)
   };
 
+  public func compareChars(char1: Char, char2: Char, flags: ?Types.Flags) : Bool {
+    switch (flags) {
+      case (?f) {
+        if (not f.caseSensitive) {
+          Text.toLowercase(Text.fromChar(char1)) == Text.toLowercase(Text.fromChar(char2))
+        } else {
+          char1 == char2
+        }
+      };
+      case null { char1 == char2 };
+    };
+  };
+
+  public func isInRange(char: Char, start: Char, end: Char, flags: ?Types.Flags) : Bool {
+    switch (flags) {
+      case (?f) {
+        if (not f.caseSensitive) {
+          let lowerChar = Text.toLowercase(Text.fromChar(char));
+          let lowerStart = Text.toLowercase(Text.fromChar(start));
+          let lowerEnd = Text.toLowercase(Text.fromChar(end));
+          lowerChar >= lowerStart and lowerChar <= lowerEnd
+        } else {
+          char >= start and char <= end
+        }
+      };
+      case null { char >= start and char <= end };
+    };
+  };
+  
   public func substring(text : Text, start : Nat, end : Nat) : Text {
     let chars = Text.toArray(text);
     assert (start <= end);
