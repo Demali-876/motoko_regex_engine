@@ -8,6 +8,8 @@ import Nat "mo:base/Nat";
 import {substring} "Extensions";
 import {charAt} "Extensions";
 import {containsState} "Extensions";
+import {compareChars} "Extensions";
+import {isInRange} "Extensions";
 
 module {
   public class Matcher() {
@@ -185,36 +187,30 @@ module {
 
         label transitions for (t in possibleTransitions.vals()) {
           if (t.0 == currentState) {
-            switch (t.1) {
+            let isMatch = switch (t.1) {
               case (#Char(c)) {
-                log("Comparing with transition: " # debug_show (t));
-
-                let matchChar = switch (flags) {
-                  case (?f) {
-                    if (not f.caseSensitive) {
-                      Text.toLowercase(Text.fromChar(char)) == Text.toLowercase(Text.fromChar(c))
-                    } else {
-                      char == c
-                    }
-                  };
-                  case null {char == c}
-                };
-
-                if (matchChar) {
-                  let nextState = t.2;
-                  matched := true;
-                  log("Matched! Moving to state " # debug_show (nextState));
-                  index += 1;
-
-                  currentState := nextState;
-                  handleGroupEnds(currentState);
-
-                  break transitions
-                }
+                log("Comparing with transition: " # debug_show(t));
+                compareChars(char, c, flags)
               };
-              case _ {}
-            }
-          }
+              case (#Range((start, end))) {
+                log("Checking range transition: " # debug_show(t));
+                isInRange(char, start, end, flags)
+              };
+            };
+            
+            if (isMatch) {
+              let nextState = t.2;
+              matched := true;
+              log("Matched" # (switch(t.1) { 
+                case (#Char(_)) { "" };
+                case (#Range(_)) { " range" };
+              }) # "! Moving to state " # debug_show(nextState));
+              index += 1;
+              currentState := nextState;
+              handleGroupEnds(currentState);
+              break transitions;
+            };
+          };
         };
 
         if (not matched) {

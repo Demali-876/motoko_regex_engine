@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.19.5...v1.20.0) (2024-11-17)
+
+
+### Features
+
+* **Extensions:** compareChars() and isInRange() additions ([3dda9ac](https://github.com/Demali-876/motoko_regex_engine/commit/3dda9ac7d29694875a7f44487ae3745e2040a437))
+
 ## [1.19.5](https://github.com/Demali-876/motoko_regex_engine/compare/v1.19.4...v1.19.5) (2024-11-16)
 
 ## [1.19.4](https://github.com/Demali-876/motoko_regex_engine/compare/v1.19.3...v1.19.4) (2024-11-16)
