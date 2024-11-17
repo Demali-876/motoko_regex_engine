@@ -9,13 +9,13 @@ A NFA based regular expression engine implemented in Motoko.
 You can install the regex engine using [MOPS](https://mops.one/):
 
 ```bash
-mops install Regex
+mops add regex
 ```
 
 ## Import
 
 ```motoko
-import Regex "mo:Regex";
+import Regex "mo:regex";
 ```
 
 ## Documentation
