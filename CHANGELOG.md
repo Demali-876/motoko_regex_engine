@@ -1,3 +1,10 @@
+## [1.20.3](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.2...v1.20.3) (2024-11-17)
+
+
+### Bug Fixes
+
+* **mop.toml:** reinit mops ([8442301](https://github.com/Demali-876/motoko_regex_engine/commit/8442301c0cacfc62cd5eda6f304e51cf466fbdef))
+
 ## [1.20.2](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.1...v1.20.2) (2024-11-17)
 
 
