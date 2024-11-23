@@ -152,7 +152,17 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="searching"><a class="header" href="#searching">Searching</a></h1>
+<p>The <code>search</code> function scans the input text from left to right to find a match.</p>
+<pre><code class="language-motoko">let result = regex.search("launch icp 629-07-2021");
+switch (result) {
+  case (#Match(matchRecord)):
+    Debug.print("Search result: " # matchRecord.value);
+  case (#NoMatch):
+    Debug.print("No match found.");
+}
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
