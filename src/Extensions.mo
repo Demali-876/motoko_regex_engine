@@ -91,13 +91,6 @@ module {
     Array.tabulate<T>(end - start, func(i : Nat) {arr[start + i]})
   };
 
-  public func replace<T>(buffer : Buffer.Buffer<T>, index : Nat, newElement : T) {
-    if (index >= buffer.size()) {
-      Debug.trap("Index out of bounds")
-    };
-    ignore buffer.remove(index);
-    buffer.insert(index, newElement)
-  };
   public func isReservedSymbol(char : Char) : Bool {
     switch char {
       case (
@@ -355,23 +348,4 @@ module {
       case _ {[ast]}
     }
   };
-
-  public func errorToText(error : Types.RegexError) : Text {
-    switch (error) {
-      case (#GenericError(text)) text;
-      case (#InvalidEscapeSequence(char)) "Invalid escape sequence: " # Char.toText(char);
-      case (#InvalidQuantifierRange(text)) "Invalid quantifier range: " # text;
-      case (#MismatchedParenthesis(left, right)) "Mismatched parenthesis: " # Char.toText(left) # " and " # Char.toText(right);
-      case (#UnexpectedCharacter(char)) "Unexpected character: " # Char.toText(char);
-      case (#UnexpectedEndOfInput) "Unexpected end of input";
-      case (#UnmatchedParenthesis(char)) "Unmatched parenthesis: " # Char.toText(char);
-      case (#UnexpectedToken(tokenType)) "Unexpected token: " # debug_show (tokenType);
-      case (#UnclosedGroup(text)) "Unclosed group: " # text;
-      case (#InvalidQuantifier(text)) "Invalid quantifier: " # text;
-      case (#InvalidTransition(text)) "Invalid transition: " # text;
-      case (#LabelLimitExceeded(text)) "Label limit has exceeded 10,000 " # text;
-      case (#StateOverflow(text)) "State overflow: " # text;
-      case (#InvalidState(text)) "Invalid state: " # text
-    }
-  }
 }
