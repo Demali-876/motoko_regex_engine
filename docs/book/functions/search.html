@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>search() - Motoko Regex Documentaion</title>
+        <title>search()</title>
 
 
         <!-- Custom HTML head -->
@@ -120,7 +120,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">Motoko Regex Documentaion</h1>
+                    <h1 class="menu-title"></h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -152,7 +152,17 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="searching"><a class="header" href="#searching">Searching</a></h1>
+<p>The <code>search</code> function scans the input text from left to right to find a match.</p>
+<pre><code class="language-motoko">let result = regex.search("launch icp 629-07-2021");
+switch (result) {
+  case (#Match(matchRecord)):
+    Debug.print("Search result: " # matchRecord.value);
+  case (#NoMatch):
+    Debug.print("No match found.");
+}
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
@@ -182,22 +192,6 @@
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
 

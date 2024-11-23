@@ -1,12 +1,23 @@
+# Matching
 
-# search()
+```motoko
+let regex = Regex.Regex("\d{3}-\d{2}-\d{4}", null);
+let result = regex.match("629-07-2021");
 
-Searches for the first occurrence of a regex pattern in the input text.
+switch (result) {
+  case (#Match(matchRecord)):
+    Debug.print("Match found: " # matchRecord.value);
+  case (#NoMatch):
+    Debug.print("No match found.");
+}
+```
 
-### Parameters
+## Understanding the Matcher
 
-- `text: Text`: The text to search.
+The matcher evaluates the input text against the regex pattern using the following principles:
 
-### Returns
+1. **Full Match Required**: The input must traverse all states of the NFA and reach an accept state.
+2. **Immediate Termination**: If a valid path cannot be identified, the matcher stops and returns `#NoMatch`.
+3. **First Match Priority**: The matcher stops as soon as it finds a valid match.
 
-- `Match`: A result containing a record about the first match, if found or an Error.
+---
