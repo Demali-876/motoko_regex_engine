@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.5...v1.21.0) (2024-11-23)
+
+
+### Performance Improvements
+
+* **Extensions:** Removal of redundancies ([6a0d2ad](https://github.com/Demali-876/motoko_regex_engine/commit/6a0d2ad188176689fc44cb4d00b0e3f765ae6174))
+
 ## [1.20.5](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.4...v1.20.5) (2024-11-17)
 
 ## [1.20.4](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.3...v1.20.4) (2024-11-17)
