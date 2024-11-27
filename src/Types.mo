@@ -44,7 +44,6 @@ module{
     public type QuantifierMode = {
       #Greedy;
       #Lazy;
-      #Possessive;
     };
 
   public type QuantifierType = {
@@ -118,7 +117,7 @@ module{
     #Range : (Char, Char);
     #Char :Char;
   };
-  public type Transition = (State, Symbol, State);
+  public type Transition = (State, Symbol, State, ?QuantifierMode );
   
   public type Assertion = {
   assertion: {
