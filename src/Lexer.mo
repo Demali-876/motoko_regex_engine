@@ -100,80 +100,88 @@ module {
     };
 
     private func tokenizeQuantifier(min : Nat, max : ?Nat) : Result.Result<Types.Token, Types.RegexError> {
-      let start = cursor.getPos();
-      cursor.inc();
-      let mode = if (cursor.hasNext()) {
-        switch (cursor.current()) {
-          case '?' {
-            cursor.inc();
-            if (cursor.hasNext() and cursor.current() == '?') {
-              return #err(#GenericError("Invalid double lazy modifier at position " # Nat.toText(cursor.getPos())))
-            };
-            #Lazy
-          };
-          case '+' {
-            cursor.inc();
-            if (cursor.hasNext() and cursor.current() == '+') {
-              return #err(#GenericError("Invalid double possessive modifier at position " # Nat.toText(cursor.getPos())))
-            };
-            #Possessive
-          };
-          case _ {#Greedy}
-        }
-      } else {
-        #Greedy
+    let start = cursor.getPos();
+    cursor.inc();
+    
+    let mode = if (cursor.hasNext()) {
+      switch (cursor.current()) {
+        case '?' {
+          cursor.inc();
+          #Lazy;
+        };
+        case ('*' or '+') {
+          return #err(#GenericError("Invalid quantifier modifier at position " # Nat.toText(cursor.getPos())));
+        };
+        case _ { #Greedy; };
       };
-
-      createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()))
+    } else {
+      #Greedy;
     };
+
+    createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()));
+  };
 
     private func tokenizeQuantifierRange() : Result.Result<Types.Token, Types.RegexError> {
-      let start = cursor.getPos();
-      cursor.inc();
-      if (not cursor.hasNext()) {
-        return #err(#InvalidQuantifierRange("Unclosed quantifier at position " # Nat.toText(start)))
+  let start = cursor.getPos();
+  cursor.inc();
+  if (not cursor.hasNext()) {
+    return #err(#InvalidQuantifierRange("Unclosed quantifier at position " # Nat.toText(start)));
+  };
+  if (cursor.current() == ',') {
+    return #err(#InvalidQuantifierRange("Quantifier cannot start with comma at position " # Nat.toText(cursor.getPos())));
+  };
+  if (cursor.current() == '}') {
+    return #err(#InvalidQuantifierRange("Empty quantifier at position " # Nat.toText(start)));
+  };
+
+  var rangeContent = "";
+  var hasComma = false;
+  var hasNumber = false;
+
+  while (cursor.hasNext() and cursor.current() != '}') {
+    let current = cursor.current();
+    if (current == ',') {
+      if (hasComma) {
+        return #err(#InvalidQuantifierRange("Multiple commas in quantifier range at position " # Nat.toText(cursor.getPos())));
       };
-      if (cursor.current() == ',') {
-        return #err(#InvalidQuantifierRange("Quantifier cannot start with comma at position " # Nat.toText(cursor.getPos())))
-      };
-      if (cursor.current() == '}') {
-        return #err(#InvalidQuantifierRange("Empty quantifier at position " # Nat.toText(start)))
-      };
-
-      var rangeContent = "";
-      var hasComma = false;
-      var hasNumber = false;
-
-      while (cursor.hasNext() and cursor.current() != '}') {
-        let current = cursor.current();
-        if (current == ',') {
-          if (hasComma) {
-            return #err(#InvalidQuantifierRange("Multiple commas in quantifier range at position " # Nat.toText(cursor.getPos())))
-          };
-          hasComma := true
-        } else if (Char.isDigit(current)) {
-          hasNumber := true
-        } else {
-          return #err(#InvalidQuantifierRange("Invalid character in quantifier range at position " # Nat.toText(cursor.getPos())))
-        };
-
-        rangeContent := rangeContent # Text.fromChar(current);
-        cursor.inc()
-      };
-
-      if (not hasNumber) {
-        return #err(#InvalidQuantifierRange("Quantifier range must contain at least one number"))
-      };
-
-      if (not cursor.hasNext() or cursor.current() != '}') {
-        return #err(#InvalidQuantifierRange("Missing closing '}' for quantifier range"))
-      };
-
-      cursor.inc();
-      let (min, max) = Extensions.parseQuantifierRange(rangeContent);
-
-      createToken(#Quantifier({min; max; mode = #Greedy}), Extensions.slice(input, start, ?cursor.getPos()))
+      hasComma := true;
+    } else if (Char.isDigit(current)) {
+      hasNumber := true;
+    } else {
+      return #err(#InvalidQuantifierRange("Invalid character in quantifier range at position " # Nat.toText(cursor.getPos())));
     };
+    rangeContent := rangeContent # Text.fromChar(current);
+    cursor.inc();
+  };
+
+  if (not hasNumber) {
+    return #err(#InvalidQuantifierRange("Quantifier range must contain at least one number"));
+  };
+
+  if (not cursor.hasNext() or cursor.current() != '}') {
+    return #err(#InvalidQuantifierRange("Missing closing '}' for quantifier range"));
+  };
+
+  cursor.inc();
+  let (min, max) = Extensions.parseQuantifierRange(rangeContent);
+
+  let mode = if (cursor.hasNext()) {
+    switch (cursor.current()) {
+      case '?' {
+        cursor.inc();
+        #Lazy;
+      };
+      case ('*' or '+') {
+        return #err(#GenericError("Invalid quantifier modifier at position " # Nat.toText(cursor.getPos())));
+      };
+      case _ { #Greedy; };
+    };
+  } else {
+    #Greedy;
+  };
+
+  createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()));
+};
     private func tokenizeCharacterClass() : Result.Result<Types.Token, Types.RegexError> {
       let start = cursor.getPos();
       cursor.inc();
