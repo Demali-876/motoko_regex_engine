@@ -201,21 +201,164 @@
 <li><strong><code>findIter</code></strong>: Iterate over matches.</li>
 </ul>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><h1 id="regular-expression-syntax"><a class="header" href="#regular-expression-syntax">Regular Expression Syntax</a></h1>
-<p>The Motoko Regex Engine supports the following regex syntax:</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="syntax"><a class="header" href="#syntax">Syntax</a></h1>
 <ul>
-<li><strong>Character classes</strong>: <code>[abc]</code>, <code>[^abc]</code>, <code>[a-z]</code></li>
-<li><strong>Quantifiers</strong>: <code>*</code>, <code>+</code>, <code>?</code>, <code>{m,n}</code></li>
-<li><strong>Anchors</strong>: <code>^</code>, <code>$</code></li>
-<li><strong>Groups</strong>: <code>(abc)</code>, <code>(?:abc)</code></li>
-<li><strong>Escaping special characters</strong>: <code>\</code>, <code>\d</code>, <code>\w</code></li>
-</ul>
-<p>Unsupported features:</p>
+<li><a href="syntax.html#syntax">Syntax</a>
 <ul>
-<li>Lookaround assertions (TODO: See case(#lookaround) in matcher line 179 )</li>
-<li>Non-greedy quantifiers (TODO: see case (#Quantifier) in compiler line 79)</li>
-<li>Anchors (TODO: see case (#Anchor) in matcher line 149)</li>
+<li><a href="syntax.html#supported-syntax">Supported Syntax</a></li>
+<li><a href="syntax.html#quantifiers">Quantifiers</a>
+<ul>
+<li><a href="syntax.html#supported-quantifiers">Supported Quantifiers</a></li>
+<li><a href="syntax.html#quantifier-modes">Quantifier Modes</a></li>
+<li><a href="syntax.html#invalid-quantifiers">Invalid Quantifiers</a></li>
 </ul>
+</li>
+<li><a href="syntax.html#metacharacters">Metacharacters</a></li>
+<li><a href="syntax.html#character-classes">Character Classes</a>
+<ul>
+<li><a href="syntax.html#nested-quantifiers">Nested Quantifiers</a></li>
+</ul>
+</li>
+<li><a href="syntax.html#anchors">Anchors</a></li>
+<li><a href="syntax.html#groups-and-group-modifiers">Groups and Group Modifiers</a>
+<ul>
+<li><a href="syntax.html#supported-group-modifiers">Supported Group Modifiers</a></li>
+</ul>
+</li>
+<li><a href="syntax.html#escaped-characters">Escaped Characters</a></li>
+<li><a href="syntax.html#prohibited-patterns">Prohibited Patterns</a></li>
+<li><a href="syntax.html#error-handling">Error Handling</a>
+<ul>
+<li><a href="syntax.html#error-types">Error Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="supported-syntax"><a class="header" href="#supported-syntax">Supported Syntax</a></h2>
+<p>Motoko regex supports a variety of syntax features for defining patterns. These include:</p>
+<ul>
+<li>Character matching (<code>a</code>, <code>b</code>, <code>c</code>, etc.)</li>
+<li>Alternation (<code>|</code>)</li>
+<li>Grouping (<code>()</code>)</li>
+<li>Character classes (<code>[]</code> with support for ranges like <code>[a-z]</code>)</li>
+<li>Quantifiers (<code>*</code>, <code>+</code>, <code>?</code>, <code>{n}</code>, <code>{n,m}</code>)</li>
+<li>Anchors (<code>^</code>, <code>$</code>)</li>
+</ul>
+<hr />
+<h2 id="quantifiers"><a class="header" href="#quantifiers">Quantifiers</a></h2>
+<p>Quantifiers specify how many times a preceding element must occur for a match.</p>
+<h3 id="supported-quantifiers"><a class="header" href="#supported-quantifiers">Supported Quantifiers</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Quantifier</th><th>Meaning</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>*</code></td><td>Match 0 or more times</td><td><code>a*</code> matches "", "a", "aaa"</td></tr>
+<tr><td><code>+</code></td><td>Match 1 or more times</td><td><code>a+</code> matches "a", "aaa"</td></tr>
+<tr><td><code>?</code></td><td>Match 0 or 1 time</td><td><code>a?</code> matches "", "a"</td></tr>
+<tr><td><code>{n}</code></td><td>Match exactly <code>n</code> times</td><td><code>a{2}</code> matches "aa"</td></tr>
+<tr><td><code>{n,}</code></td><td>Match at least <code>n</code> times</td><td><code>a{2,}</code> matches "aa", "aaa"</td></tr>
+<tr><td><code>{n,m}</code></td><td>Match between <code>n</code> and <code>m</code> times</td><td><code>a{2,4}</code> matches "aa", "aaa", "aaaa"</td></tr>
+</tbody></table>
+</div>
+<h3 id="quantifier-modes"><a class="header" href="#quantifier-modes">Quantifier Modes</a></h3>
+<p>Quantifiers can operate in different modes:</p>
+<ul>
+<li><strong>Greedy:</strong> Matches as many occurrences as possible.</li>
+<li><strong>Lazy (<code>?</code> after quantifier):</strong> Matches as few as possible. E.g., <code>a*?</code> matches fewer occurrences of "a".</li>
+<li><strong>Possessive (<code>+</code> after quantifier):</strong> Prevents backtracking. E.g., <code>a*+</code>.</li>
+</ul>
+<h3 id="invalid-quantifiers"><a class="header" href="#invalid-quantifiers">Invalid Quantifiers</a></h3>
+<p>Certain quantifier patterns are not allowed:</p>
+<ul>
+<li>Redundant modifiers, such as <code>a{2}+</code> or <code>a{2}?+</code>.</li>
+<li>Empty quantifiers, e.g., <code>{}</code> or <code>{,}</code>.</li>
+<li>Multiple commas in ranges, e.g., <code>{2,,4}</code>.</li>
+</ul>
+<hr />
+<h2 id="metacharacters"><a class="header" href="#metacharacters">Metacharacters</a></h2>
+<p>Metacharacters represent special patterns or symbols.</p>
+<div class="table-wrapper"><table><thead><tr><th>Metacharacter</th><th>Meaning</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>.</code></td><td>Match any character except <code>\n</code></td><td><code>a.b</code> matches "acb"</td></tr>
+<tr><td><code>\w</code></td><td>Match word characters (alphanumeric + <code>_</code>)</td><td><code>\w+</code> matches "abc123"</td></tr>
+<tr><td><code>\W</code></td><td>Match non-word characters</td><td><code>\W</code> matches "@"</td></tr>
+<tr><td><code>\d</code></td><td>Match digits (<code>0-9</code>)</td><td><code>\d+</code> matches "123"</td></tr>
+<tr><td><code>\D</code></td><td>Match non-digits</td><td><code>\D</code> matches "a"</td></tr>
+<tr><td><code>\s</code></td><td>Match whitespace</td><td><code>\s+</code> matches "   "</td></tr>
+<tr><td><code>\S</code></td><td>Match non-whitespace</td><td><code>\S</code> matches "a"</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h2 id="character-classes"><a class="header" href="#character-classes">Character Classes</a></h2>
+<p>Character classes allow matching sets of characters.</p>
+<ul>
+<li><code>[abc]</code>: Matches any character <code>a</code>, <code>b</code>, or <code>c</code>.</li>
+<li><code>[^abc]</code>: Matches any character except <code>a</code>, <code>b</code>, or <code>c</code>.</li>
+<li><code>[a-z]</code>: Matches any character in the range <code>a</code> to <code>z</code>.</li>
+</ul>
+<h3 id="nested-quantifiers"><a class="header" href="#nested-quantifiers">Nested Quantifiers</a></h3>
+<p>Quantifiers inside character classes must be explicitly defined. Nested or redundant quantifiers, like <code>[a-z]{2}+</code>, are not allowed.</p>
+<hr />
+<h2 id="anchors"><a class="header" href="#anchors">Anchors</a></h2>
+<p>Anchors specify positions in the text.</p>
+<div class="table-wrapper"><table><thead><tr><th>Anchor</th><th>Meaning</th><th>Example</th></tr></thead><tbody>
+<tr><td><code>^</code></td><td>Start of the string</td><td><code>^abc</code> matches "abc" at the beginning</td></tr>
+<tr><td><code>$</code></td><td>End of the string</td><td><code>abc$</code> matches "abc" at the end</td></tr>
+<tr><td><code>\b</code></td><td>Word boundary</td><td><code>\bword\b</code> matches "word"</td></tr>
+<tr><td><code>\B</code></td><td>Non-word boundary</td><td><code>\Bword</code> matches "word" not at a boundary</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h2 id="groups-and-group-modifiers"><a class="header" href="#groups-and-group-modifiers">Groups and Group Modifiers</a></h2>
+<p>Groups are enclosed in parentheses <code>()</code> and can be modified for specific behaviors.</p>
+<h3 id="supported-group-modifiers"><a class="header" href="#supported-group-modifiers">Supported Group Modifiers</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Modifier</th><th>Syntax</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Non-capturing</td><td><code>(?:...)</code></td><td>Groups without capturing</td></tr>
+<tr><td>Positive Lookahead</td><td><code>(?=...)</code></td><td>Asserts that what follows matches</td></tr>
+<tr><td>Negative Lookahead</td><td><code>(?!...)</code></td><td>Asserts that what follows does not match</td></tr>
+<tr><td>Positive Lookbehind</td><td><code>(?&lt;=...)</code></td><td>Asserts that what precedes matches</td></tr>
+<tr><td>Negative Lookbehind</td><td><code>(?&lt;!...)</code></td><td>Asserts that what precedes does not match</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h2 id="escaped-characters"><a class="header" href="#escaped-characters">Escaped Characters</a></h2>
+<p>Escape sequences represent special characters.</p>
+<div class="table-wrapper"><table><thead><tr><th>Escape Sequence</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>\\</code></td><td>Literal backslash</td></tr>
+<tr><td><code>\n</code></td><td>Newline</td></tr>
+<tr><td><code>\t</code></td><td>Tab</td></tr>
+<tr><td><code>\w</code>, <code>\W</code></td><td>Word/Non-word characters</td></tr>
+<tr><td><code>\d</code>, <code>\D</code></td><td>Digit/Non-digit</td></tr>
+<tr><td><code>\s</code>, <code>\S</code></td><td>Whitespace/Non-whitespace</td></tr>
+</tbody></table>
+</div>
+<p>Invalid escape sequences throw an error.</p>
+<hr />
+<h2 id="prohibited-patterns"><a class="header" href="#prohibited-patterns">Prohibited Patterns</a></h2>
+<ul>
+<li>Invalid group modifiers: e.g., <code>(?)</code>.</li>
+<li>Empty groups: <code>()</code> is not allowed.</li>
+<li>Empty character classes: <code>[]</code> results in an error.</li>
+<li>Redundant or conflicting quantifiers: <code>a{2}+</code>.</li>
+</ul>
+<hr />
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<p>The Motoko regex engine provides detailed error feedback to help developers identify and fix issues in their regular expressions. Below is a list of all possible errors, their meanings, and typical scenarios where they might occur.</p>
+<h3 id="error-types"><a class="header" href="#error-types">Error Types</a></h3>
+<div class="table-wrapper"><table><thead><tr><th><strong>Error</strong></th><th><strong>Description</strong></th><th><strong>Cause</strong></th></tr></thead><tbody>
+<tr><td><strong><code>#UnexpectedCharacter</code></strong></td><td>An invalid character was encountered during parsing.</td><td>Using a character that is not allowed in regex syntax, such as unescaped special characters.</td></tr>
+<tr><td><strong><code>#UnexpectedEndOfInput</code></strong></td><td>The regex input ended unexpectedly, leaving constructs incomplete.</td><td>Omitting closing brackets, parentheses, or quantifier ranges.</td></tr>
+<tr><td><strong><code>#GenericError</code></strong></td><td>A generic error message providing additional context.</td><td>Various syntax or logic errors not covered by specific error types.</td></tr>
+<tr><td><strong><code>#InvalidQuantifierRange</code></strong></td><td>A malformed or invalid quantifier range was used.</td><td>Using invalid quantifier syntax, e.g., <code>{,}</code>, <code>{,3}</code>, <code>{a,b}</code>.</td></tr>
+<tr><td><strong><code>#InvalidEscapeSequence</code></strong></td><td>An invalid escape sequence was encountered.</td><td>Using unrecognized escape sequences like <code>\q</code> or <code>\x</code> without proper syntax.</td></tr>
+<tr><td><strong><code>#UnmatchedParenthesis</code></strong></td><td>A closing parenthesis <code>)</code> does not match any preceding opening parenthesis <code>(</code>.</td><td>Missing or extra closing parentheses in the regex pattern.</td></tr>
+<tr><td><strong><code>#MismatchedParenthesis</code></strong></td><td>Parentheses do not form a valid pairing.</td><td>Nested parentheses are incorrectly matched or unbalanced, e.g., <code>((a)b])</code>.</td></tr>
+<tr><td><strong><code>#UnexpectedToken</code></strong></td><td>An unexpected token was encountered during parsing.</td><td>Using misplaced or unrecognized tokens in the regex pattern.</td></tr>
+<tr><td><strong><code>#UnclosedGroup</code></strong></td><td>A group construct is not properly closed with a closing parenthesis <code>)</code>.</td><td>Missing a closing parenthesis in a group definition.</td></tr>
+<tr><td><strong><code>#InvalidQuantifier</code></strong></td><td>A quantifier is malformed or applied in an invalid context.</td><td>Using redundant or conflicting quantifiers, e.g., <code>a{2}+</code>.</td></tr>
+<tr><td><strong><code>#EmptyExpression</code></strong></td><td>The regex input is empty or contains no valid expressions.</td><td>Providing an empty string or expression with no meaningful content.</td></tr>
+<tr><td><strong><code>#NotCompiled</code></strong></td><td>The regex has not been compiled before attempting to use it.</td><td>There was an error during compilation of the reject object, this may be due to any of the previous errors. That error will be specified in the <code>#NotCompiled</code> variant.</td></tr>
+</tbody></table>
+</div>
+<hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="module-contents"><a class="header" href="#module-contents">Module Contents</a></h1>
 <p>The Motoko Regex Engine module includes the following components:</p>
 <ol>
@@ -225,14 +368,102 @@
 <li><strong>Matcher</strong>: Simulates the NFA on the input string.</li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="flags-1"><a class="header" href="#flags-1">Flags</a></h1>
-<p>Flags modify the behavior of the regex engine:</p>
+<p>Flags in Motoko regex provide flexibility by modifying the behavior of the regex matching process. This section covers the available flags, their purpose, and how to use them effectively.</p>
+<hr />
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Flags are optional parameters that can alter how the regex engine interprets and processes a pattern. They enable features such as case-insensitive matching and handling multiline inputs.</p>
+<hr />
+<h2 id="available-flags"><a class="header" href="#available-flags">Available Flags</a></h2>
+<h3 id="1-case_sensitive"><a class="header" href="#1-case_sensitive"><strong>1. CASE_SENSITIVE</strong></a></h3>
 <ul>
-<li><code>CASE_SENSITIVE</code>: Makes matching case-insensitive.</li>
-<li><code>MULTILINE</code>: Allows <code>^</code> and <code>$</code> to match at line boundaries.</li>
+<li>
+<p><strong>Type:</strong> <code>Bool</code></p>
+</li>
+<li>
+<p><strong>Default:</strong> <code>true</code></p>
+</li>
+<li>
+<p><strong>Description:</strong> Determines whether the regex should consider case when matching characters.</p>
+</li>
+<li>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>When <code>caseSensitive = true</code>: Matches are case-sensitive (default behavior).</li>
+<li>When <code>caseSensitive = false</code>: Matches are case-insensitive, treating uppercase and lowercase letters as equivalent.</li>
 </ul>
-<p>Example:</p>
-<pre><code class="language-motoko">let regex = Regex.Regex("abc", ?{caseSensitive =false});
+</li>
+<li>
+<p><strong>Example:</strong></p>
+<pre><code class="language-motoko">let regex = Regex.Regex("abc", ?{caseSensitive = false});
+assert(regex.search("ABC") == #FullMatch);
 </code></pre>
+</li>
+</ul>
+<h3 id="2-multiline"><a class="header" href="#2-multiline"><strong>2. MULTILINE</strong></a></h3>
+<ul>
+<li>
+<p><strong>Type:</strong> <code>Bool</code></p>
+</li>
+<li>
+<p><strong>Default:</strong> <code>false</code></p>
+</li>
+<li>
+<p><strong>Description:</strong> Alters the behavior of anchors (<code>^</code> and <code>$</code>) to match at line boundaries rather than the start or end of the entire string.</p>
+</li>
+<li>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>When <code>multiline = true</code>:
+<ul>
+<li><code>^</code> matches the start of any line.</li>
+<li><code>$</code> matches the end of any line.</li>
+</ul>
+</li>
+<li>When <code>multiline = false</code> (default behavior):
+<ul>
+<li><code>^</code> matches the beginning of the entire input.</li>
+<li><code>$</code> matches the end of the entire input.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Example:</strong></p>
+<pre><code class="language-motoko">let regex = Regex.Regex("^abc$", ?{multiline = true});
+assert(regex.search("abc\ndef\nabc") == #FullMatch);
+</code></pre>
+</li>
+</ul>
+<hr />
+<h2 id="combining-flags"><a class="header" href="#combining-flags">Combining Flags</a></h2>
+<p>You can combine flags to fine-tune the regex engine's behavior. For example:</p>
+<pre><code class="language-motoko">let regex = Regex.Regex("abc", ?{caseSensitive = false; multiline = true});
+assert(regex.search("ABC\ndef\nabc") == #FullMatch);
+</code></pre>
+<p>In this example:</p>
+<ul>
+<li>The pattern <code>abc</code> is matched regardless of case.</li>
+<li>The engine processes each line independently due to <code>multiline = true</code>.</li>
+</ul>
+<hr />
+<h2 id="default-behavior-without-flags"><a class="header" href="#default-behavior-without-flags">Default Behavior Without Flags</a></h2>
+<p>If no flags are specified, the engine uses the following defaults:</p>
+<ul>
+<li><code>caseSensitive = true</code></li>
+<li><code>multiline = false</code></li>
+</ul>
+<p>This means:</p>
+<ul>
+<li>Matching is case-sensitive.</li>
+<li>Anchors (<code>^</code> and <code>$</code>) match only at the start and end of the entire input.</li>
+</ul>
+<hr />
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ul>
+<li>Use <code>caseSensitive = false</code> for patterns that need to ignore case differences, such as matching user inputs in a case-insensitive manner.</li>
+<li>Use <code>multiline = true</code> when processing multi-line text, such as logs or formatted documents, where each line might have independent matching requirements.</li>
+</ul>
+<hr />
 <div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="searching"><a class="header" href="#searching">Searching</a></h1>
 <p>The <code>search</code> function scans the input text from left to right to find a match.</p>
 <pre><code class="language-motoko">let result = regex.search("launch icp 629-07-2021");

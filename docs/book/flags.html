@@ -153,14 +153,102 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="flags"><a class="header" href="#flags">Flags</a></h1>
-<p>Flags modify the behavior of the regex engine:</p>
+<p>Flags in Motoko regex provide flexibility by modifying the behavior of the regex matching process. This section covers the available flags, their purpose, and how to use them effectively.</p>
+<hr />
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Flags are optional parameters that can alter how the regex engine interprets and processes a pattern. They enable features such as case-insensitive matching and handling multiline inputs.</p>
+<hr />
+<h2 id="available-flags"><a class="header" href="#available-flags">Available Flags</a></h2>
+<h3 id="1-case_sensitive"><a class="header" href="#1-case_sensitive"><strong>1. CASE_SENSITIVE</strong></a></h3>
 <ul>
-<li><code>CASE_SENSITIVE</code>: Makes matching case-insensitive.</li>
-<li><code>MULTILINE</code>: Allows <code>^</code> and <code>$</code> to match at line boundaries.</li>
+<li>
+<p><strong>Type:</strong> <code>Bool</code></p>
+</li>
+<li>
+<p><strong>Default:</strong> <code>true</code></p>
+</li>
+<li>
+<p><strong>Description:</strong> Determines whether the regex should consider case when matching characters.</p>
+</li>
+<li>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>When <code>caseSensitive = true</code>: Matches are case-sensitive (default behavior).</li>
+<li>When <code>caseSensitive = false</code>: Matches are case-insensitive, treating uppercase and lowercase letters as equivalent.</li>
 </ul>
-<p>Example:</p>
-<pre><code class="language-motoko">let regex = Regex.Regex("abc", ?{caseSensitive =false});
+</li>
+<li>
+<p><strong>Example:</strong></p>
+<pre><code class="language-motoko">let regex = Regex.Regex("abc", ?{caseSensitive = false});
+assert(regex.search("ABC") == #FullMatch);
 </code></pre>
+</li>
+</ul>
+<h3 id="2-multiline"><a class="header" href="#2-multiline"><strong>2. MULTILINE</strong></a></h3>
+<ul>
+<li>
+<p><strong>Type:</strong> <code>Bool</code></p>
+</li>
+<li>
+<p><strong>Default:</strong> <code>false</code></p>
+</li>
+<li>
+<p><strong>Description:</strong> Alters the behavior of anchors (<code>^</code> and <code>$</code>) to match at line boundaries rather than the start or end of the entire string.</p>
+</li>
+<li>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>When <code>multiline = true</code>:
+<ul>
+<li><code>^</code> matches the start of any line.</li>
+<li><code>$</code> matches the end of any line.</li>
+</ul>
+</li>
+<li>When <code>multiline = false</code> (default behavior):
+<ul>
+<li><code>^</code> matches the beginning of the entire input.</li>
+<li><code>$</code> matches the end of the entire input.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Example:</strong></p>
+<pre><code class="language-motoko">let regex = Regex.Regex("^abc$", ?{multiline = true});
+assert(regex.search("abc\ndef\nabc") == #FullMatch);
+</code></pre>
+</li>
+</ul>
+<hr />
+<h2 id="combining-flags"><a class="header" href="#combining-flags">Combining Flags</a></h2>
+<p>You can combine flags to fine-tune the regex engine's behavior. For example:</p>
+<pre><code class="language-motoko">let regex = Regex.Regex("abc", ?{caseSensitive = false; multiline = true});
+assert(regex.search("ABC\ndef\nabc") == #FullMatch);
+</code></pre>
+<p>In this example:</p>
+<ul>
+<li>The pattern <code>abc</code> is matched regardless of case.</li>
+<li>The engine processes each line independently due to <code>multiline = true</code>.</li>
+</ul>
+<hr />
+<h2 id="default-behavior-without-flags"><a class="header" href="#default-behavior-without-flags">Default Behavior Without Flags</a></h2>
+<p>If no flags are specified, the engine uses the following defaults:</p>
+<ul>
+<li><code>caseSensitive = true</code></li>
+<li><code>multiline = false</code></li>
+</ul>
+<p>This means:</p>
+<ul>
+<li>Matching is case-sensitive.</li>
+<li>Anchors (<code>^</code> and <code>$</code>) match only at the start and end of the entire input.</li>
+</ul>
+<hr />
+<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
+<ul>
+<li>Use <code>caseSensitive = false</code> for patterns that need to ignore case differences, such as matching user inputs in a case-insensitive manner.</li>
+<li>Use <code>multiline = true</code> when processing multi-line text, such as logs or formatted documents, where each line might have independent matching requirements.</li>
+</ul>
+<hr />
 
                     </main>
 
