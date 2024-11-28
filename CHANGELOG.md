@@ -1,3 +1,11 @@
+# [1.22.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.21.0...v1.22.0) (2024-11-28)
+
+
+### Features
+
+* **compiler:** sort transition table ([365dc1a](https://github.com/Demali-876/motoko_regex_engine/commit/365dc1a39f92ca2e54b72bf145796700f17be8aa))
+* **matcher:** greedy matching by default ([ba34bd8](https://github.com/Demali-876/motoko_regex_engine/commit/ba34bd8f51daf976051a96695302fd993a2e307f))
+
 # [1.21.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.20.5...v1.21.0) (2024-11-23)
 
 
