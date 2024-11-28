@@ -318,7 +318,7 @@ module {
   };
   public func getMaxState(transitions : [Transition], acceptStates : [State], startState : State) : State {
     var maxState = startState;
-    for ((from, _, to) in transitions.vals()) {
+    for ((from, _, to, _) in transitions.vals()) {
       if (from > maxState) maxState := from;
       if (to > maxState) maxState := to
     };
@@ -348,4 +348,47 @@ module {
       case _ {[ast]}
     }
   };
+    public func compareTransitions(a : Transition, b : Transition) : Order.Order {
+    switch (a.1, b.1) {
+        case (#Char(_), #Range(_)) #less;
+        case (#Range(_), #Char(_)) #greater;
+        case (#Char(charA), #Char(charB)) {
+            if (charA < charB) #less
+            else if (charA > charB) #greater
+            else {
+                let modeA = switch (a.3) {case (?m) m; case null #Greedy};
+                let modeB = switch (b.3) {case (?m) m; case null #Greedy};
+                switch (modeA, modeB) {
+                    case (#Lazy, #Greedy) #less;
+                    case (#Greedy, #Lazy) #greater;
+                    case _ #equal
+                }
+            }
+        };
+        case (#Range((startA, endA)), #Range((startB, endB))) {
+            if (startA < startB) #less
+            else if (startA > startB) #greater
+            else if (endA < endB) #less
+            else if (endA > endB) #greater
+            else {
+                let modeA = switch (a.3) {case (?m) m; case null #Greedy};
+                let modeB = switch (b.3) {case (?m) m; case null #Greedy};
+                switch (modeA, modeB) {
+                    case (#Lazy, #Greedy) #less;
+                    case (#Greedy, #Lazy) #greater;
+                    case _ #equal
+                }
+            }
+        };
+    }
+};
+
+    public func sortTransitionsInPlace(transitions : [var Transition]) {
+      Array.sortInPlace<Transition>(
+        transitions,
+        func(a : Transition, b : Transition) {
+          compareTransitions(a, b)
+        }
+      )
+    };
 }
