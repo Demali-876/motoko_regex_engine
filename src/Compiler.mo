@@ -19,33 +19,36 @@ module {
         case (#err(error)) {
           #err(error)
         };
-        case (#ok(transitionTable, acceptStates)) {
-          if (acceptStates.size() == 0) {
-            #err(#EmptyExpression("No accept states generated"))
-          } else {
-            let maxState = Extensions.getMaxState(transitionTable, acceptStates, startState);
-            let transitionsByState = Array.tabulate<[Transition]>(
-              maxState + 1,
-              func(state) {
-                let stateTransitions = Buffer.Buffer<Transition>(4);
-                for (t in transitionTable.vals()) {
-                  if (t.0 == state) {
-                    stateTransitions.add(t)
-                  }
-                };
-                Buffer.toArray(stateTransitions)
-              }
-            );
-            #ok({
-              states = Array.tabulate<State>(maxState + 1, func(i) = i);
-              transitions = transitionTable;
-              transitionTable = transitionsByState;
-              startState = startState;
-              acceptStates = acceptStates;
-              assertions = Buffer.toArray(assertionBuffer)
-            })
-          }
+       case (#ok(flatTransitions, acceptStates)) {
+        if (acceptStates.size() == 0) {
+          #err(#EmptyExpression("No accept states generated"))
+        } else {
+          let maxState = Extensions.getMaxState(flatTransitions, acceptStates, startState);
+
+          let transitionsByState = Array.tabulate<[Transition]>(
+            maxState + 1,
+            func(state) {
+              let stateTransitions = Buffer.Buffer<Transition>(4);
+              for (t in flatTransitions.vals()) {
+                if (t.0 == state) {
+                  stateTransitions.add(t);
+                }
+              };
+              stateTransitions.sort(Extensions.compareTransitions);
+              Buffer.toArray(stateTransitions)
+            }
+          );
+
+          #ok({
+            states = Array.tabulate<State>(maxState + 1, func(i) = i);
+            transitions = flatTransitions;
+            transitionTable = transitionsByState;
+            startState = startState;
+            acceptStates = acceptStates;
+            assertions = Buffer.toArray(assertionBuffer)
+          })
         }
+      }
       }
     };
 
@@ -55,14 +58,14 @@ module {
         case (#Character(char)) {
           let acceptState : State = startState + 1;
           let symbol : Symbol = #Char(char);
-          let transitions : [Transition] = [(startState, symbol, acceptState)];
+          let transitions : [Transition] = [(startState, symbol, acceptState, null)];
           #ok(transitions, [acceptState])
         };
 
         case (#Range(from, to)) {
           let acceptState = startState + 1;
           let symbol : Symbol = #Range(from, to);
-          let transitions : [Transition] = [(startState, symbol, acceptState)];
+          let transitions : [Transition] = [(startState, symbol, acceptState, null)];
           #ok(transitions, [acceptState])
         };
 
@@ -72,7 +75,7 @@ module {
           let ranges = Extensions.metacharToRanges(metacharType);
 
           for ((from, to) in ranges.vals()) {
-            transitionBuffer.add((startState, #Range(from, to), acceptState))
+            transitionBuffer.add((startState, #Range(from, to), acceptState, null))
           };
 
           #ok(Buffer.toArray(transitionBuffer), [acceptState])
@@ -83,12 +86,12 @@ module {
           let transitionBuffer = Buffer.Buffer<Transition>(4);
           let ranges = Extensions.computeClassRanges(classes, isNegated);
           for ((from, to) in ranges.vals()) {
-            transitionBuffer.add((startState, #Range(from, to), acceptState))
+            transitionBuffer.add((startState, #Range(from, to), acceptState, null))
           };
           #ok(Buffer.toArray(transitionBuffer), [acceptState])
         };
 
-        case (#Quantifier({subExpr; quantifier = {min; max; mode = _}})) {
+        case (#Quantifier({subExpr; quantifier = {min; max; mode;}})) {
           switch (min, max) {
             case (0, null) {
               switch (buildNFA(subExpr, startState)) {
@@ -97,7 +100,7 @@ module {
                   let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
 
                   for (t in subTransitions.vals()) {
-                    transitionBuffer.add((startState, t.1, startState))
+                    transitionBuffer.add((startState, t.1, startState, ?mode))
                   };
                   #ok(Buffer.toArray(transitionBuffer), [startState])
                 }
@@ -111,10 +114,10 @@ module {
                   let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size() * 2);
 
                   for (t in subTransitions.vals()) {
-                    transitionBuffer.add((startState, t.1, startState + 1))
+                    transitionBuffer.add((startState, t.1, startState + 1, ?mode))
                   };
                   for (t in subTransitions.vals()) {
-                    transitionBuffer.add((startState + 1, t.1, startState + 1))
+                    transitionBuffer.add((startState + 1, t.1, startState + 1, ?mode))
                   };
                   #ok(Buffer.toArray(transitionBuffer), [startState + 1])
                 }
@@ -128,7 +131,7 @@ module {
                   let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
 
                   for (t in subTransitions.vals()) {
-                    transitionBuffer.add((startState, t.1, startState + 1))
+                    transitionBuffer.add((startState, t.1, startState + 1, ?mode))
                   };
                   #ok(Buffer.toArray(transitionBuffer), [startState, startState + 1])
                 }
@@ -145,7 +148,7 @@ module {
                     case (#err(e)) return #err(e);
                     case (#ok(subTransitions, _)) {
                       for (t in subTransitions.vals()) {
-                        transitionBuffer.add((currentState, t.1, currentState + 1))
+                        transitionBuffer.add((currentState, t.1, currentState + 1,?mode))
                       };
                       currentState += 1
                     }
@@ -163,7 +166,7 @@ module {
                     case (#err(e)) return #err(e);
                     case (#ok(subTransitions, _)) {
                       for (t in subTransitions.vals()) {
-                        transitionBuffer.add((currentState, t.1, currentState + 1))
+                        transitionBuffer.add((currentState, t.1, currentState + 1,?mode))
                       };
                       currentState += 1
                     }
@@ -176,7 +179,7 @@ module {
                     case (#err(e)) return #err(e);
                     case (#ok(subTransitions, _)) {
                       for (t in subTransitions.vals()) {
-                        transitionBuffer.add((currentState, t.1, currentState + 1))
+                        transitionBuffer.add((currentState, t.1, currentState + 1, ?mode))
                       };
                       currentState += 1;
                       acceptStates.add(currentState)
@@ -199,7 +202,7 @@ module {
                   case (#err(e)) return #err(e);
                   case (#ok(subTransitions, _)) {
                     for (t in subTransitions.vals()) {
-                      transitionBuffer.add((currentState, t.1, currentState + 1))
+                      transitionBuffer.add((currentState, t.1, currentState + 1, ?mode))
                     };
                     currentState += 1
                   }
@@ -210,7 +213,7 @@ module {
                 case (#err(e)) #err(e);
                 case (#ok(subTransitions, _)) {
                   for (t in subTransitions.vals()) {
-                    transitionBuffer.add((currentState, t.1, currentState))
+                    transitionBuffer.add((currentState, t.1, currentState, ?mode))
                   };
                   #ok(Buffer.toArray(transitionBuffer), [currentState])
                 }
@@ -246,7 +249,7 @@ module {
               };
 
               for (level in Iter.range(0, maxLength - 1)) {
-                let levelTransitions = Buffer.Buffer<(State, Symbol, State)>(4);
+                let levelTransitions = Buffer.Buffer<(Transition)>(4);
                 let levelStates = Buffer.Buffer<State>(4);
 
                 for (altNodes in flattenedAlts.vals()) {
