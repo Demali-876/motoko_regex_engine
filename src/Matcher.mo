@@ -5,11 +5,7 @@ import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
-import {substring} "Extensions";
-import {charAt} "Extensions";
-import {containsState} "Extensions";
-import {compareChars} "Extensions";
-import {isInRange} "Extensions";
+import {substring; charAt; containsState; compareChars; isInRange} "Extensions";
 
 module {
   public class Matcher() {
@@ -20,6 +16,12 @@ module {
     type State = Types.State;
     type Symbol = Types.Symbol;
     type AnchorType = Types.AnchorType;
+    type Capture = {
+      groupIndex : Nat;
+      startIndex : ?Nat;
+      endIndex : ?Nat;
+      text : ?Text
+    };
 
     private var mode : Bool = false;
     private var regex : NFA = {
@@ -42,17 +44,8 @@ module {
     };
 
     public func match(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Match, MatchError> {
-      regex := nfa;
       var currentState = nfa.startState;
-      var chars = Text.toIter(text);
       var index = 0;
-
-      type Capture = {
-        groupIndex : Nat;
-        startIndex : ?Nat;
-        endIndex : ?Nat;
-        text : ?Text
-      };
 
       var captures = Buffer.Buffer<Capture>(0);
       for (assertion in nfa.assertions.vals()) {
@@ -76,15 +69,14 @@ module {
               if (group.startState == state) {
                 let cap = captures.get(group.captureIndex - 1);
                 captures.put(
-                  group.captureIndex -1,
+                  group.captureIndex - 1,
                   {
                     groupIndex = cap.groupIndex;
                     startIndex = ?index;
                     endIndex = cap.endIndex;
                     text = cap.text
                   }
-                );
-                log("Group " # debug_show (group.captureIndex) # " starts at index " # debug_show (index))
+                )
               }
             };
             case _ {}
@@ -97,20 +89,19 @@ module {
           switch (assertion.assertion) {
             case (#Group(group)) {
               if (containsState(group.endStates, state)) {
-                let cap = captures.get(group.captureIndex -1);
+                let cap = captures.get(group.captureIndex - 1);
                 switch (cap.startIndex) {
                   case (?startIdx) {
                     let capturedText = substring(text, startIdx, index);
                     captures.put(
-                      group.captureIndex -1,
+                      group.captureIndex - 1,
                       {
                         groupIndex = cap.groupIndex;
                         startIndex = cap.startIndex;
                         endIndex = ?index;
                         text = ?capturedText
                       }
-                    );
-                    log("Group " # debug_show (group.captureIndex) # " ends at index " # debug_show (index) # " with text: " # capturedText)
+                    )
                   };
                   case null {}
                 }
@@ -121,131 +112,94 @@ module {
         }
       };
 
-      func checkAnchor(aType : AnchorType) : Bool {
-        switch (aType) {
-          case (#StartOfString) {
-            switch (flags) {
-              case (?f) {
-                if (f.multiline) {
-                  index == 0 or (index > 0 and charAt(index - 1, text) == '\n')
-                } else {
-                  index == 0
-                }
-              };
-              case null {index == 0}
-            }
-          };
-          case (#EndOfString) {
-            switch (flags) {
-              case (?f) {
-                if (f.multiline) {
-                  index == text.size() or charAt(index, text) == '\n'
-                } else {
-                  index == text.size()
-                }
-              };
-              case null {index == text.size()}
-            }
-          };
-          case _ {
-            true //TODO: Implement other anchors
-          }
-        }
-      };
+      log("Starting match with text: " # text);
 
-      log("Starting match with start state: " # debug_show (currentState));
-
-      label matching for (char in chars) {
+      label matching while (index < text.size()) {
+        let char = charAt(index, text);
         let possibleTransitions = nfa.transitionTable[currentState];
         var matched = false;
+        var nextState = currentState;
 
         handleGroupStarts(currentState);
 
-        for (assertion in nfa.assertions.vals()) {
-          switch (assertion.assertion) {
-            case (#Anchor({aType; position})) {
-              if (position == currentState and not checkAnchor(aType)) {
-                return #ok({
-                  string = text;
-                  value = "";
-                  status = #NoMatch;
-                  position = (0, 0);
-                  capturedGroups = null;
-                  spans = [];
-                  lastIndex = index
-                })
-              }
-            };
-            case (#Lookaround(l)) {
-              if (l.position == currentState) {
-                // TODO: Implement lookaround matching
-              }
-            };
-            case _ {}
-          }
+        var isAcceptState = false;
+        if (containsState(nfa.acceptStates, currentState)) {
+          isAcceptState := true
         };
 
-        label transitions for (t in possibleTransitions.vals()) {
+        log("At index " # debug_show (index) # " with char '" # Text.fromChar(char) # "' in state " # debug_show (currentState));
+
+        label charTransitions for (t in possibleTransitions.vals()) {
           if (t.0 == currentState) {
-            let isMatch = switch (t.1) {
+            switch (t.1) {
               case (#Char(c)) {
-                log("Comparing with transition: " # debug_show(t));
-                compareChars(char, c, flags)
+                let isMatch = compareChars(char, c, flags);
+                if (isMatch) {
+                  matched := true;
+                  nextState := t.2;
+                  let quantifierMode = t.3;
+                  let isGreedy = quantifierMode == null or quantifierMode == ? #Greedy;
+                  log("Found exact char match - transitioning to state " # debug_show (t.2));
+
+                  if (not isGreedy and isAcceptState) {
+                    return createMatch(text, index, captures)
+                  };
+
+                  if (not isGreedy) {
+                    break charTransitions
+                  }
+                }
               };
-              case (#Range((start, end))) {
-                log("Checking range transition: " # debug_show(t));
-                isInRange(char, start, end, flags)
-              };
-            };
-            
-            if (isMatch) {
-              let nextState = t.2;
-              matched := true;
-              log("Matched" # (switch(t.1) { 
-                case (#Char(_)) { "" };
-                case (#Range(_)) { " range" };
-              }) # "! Moving to state " # debug_show(nextState));
-              index += 1;
-              currentState := nextState;
-              handleGroupEnds(currentState);
-              break transitions;
-            };
-          };
+              case _ {}
+            }
+          }
         };
 
         if (not matched) {
-          log("No match found - ending search");
-          break matching
+          label rangeTransitions for (t in possibleTransitions.vals()) {
+            if (t.0 == currentState) {
+              switch (t.1) {
+                case (#Range((start, end))) {
+                  let isMatch = isInRange(char, start, end, flags);
+                  if (isMatch) {
+                    matched := true;
+                    nextState := t.2;
+                    let quantifierMode = t.3;
+                    let isGreedy = quantifierMode == null or quantifierMode == ? #Greedy;
+                    log("Found range match - transitioning to state " # debug_show (t.2));
+
+                    if (not isGreedy and isAcceptState) {
+                      return createMatch(text, index, captures)
+                    };
+
+                    if (not isGreedy) {
+                      break rangeTransitions
+                    }
+                  }
+                };
+                case _ {}
+              }
+            }
+          }
         };
 
-        for (accept in nfa.acceptStates.vals()) {
-          if (accept == currentState) {
-            log("Reached accept state " # debug_show (currentState));
-
-            var finalCaptures = Buffer.Buffer<(Text, Nat)>(0);
-            for (cap in captures.vals()) {
-              switch (cap.text) {
-                case (?txt) {
-                  finalCaptures.add(txt, cap.groupIndex)
-                };
-                case null {}
-              }
-            };
-
-            return #ok({
-              string = text;
-              value = substring(text, 0, index);
-              status = #FullMatch;
-              position = (0, index);
-              capturedGroups = ?Buffer.toArray<(Text, Nat)>(finalCaptures);
-              spans = [(0, index)];
-              lastIndex = index
-            })
-          }
+        if (matched) {
+          currentState := nextState;
+          index += 1;
+          handleGroupEnds(currentState);
+          log("Advanced to state " # debug_show (currentState))
+        } else {
+          log("No match found - ending search");
+          break matching
         }
       };
 
-      log("No full match found");
+      for (accept in nfa.acceptStates.vals()) {
+        if (accept == currentState) {
+          return createMatch(text, index, captures)
+        }
+      };
+
       #ok({
         string = text;
         value = "";
@@ -256,56 +210,77 @@ module {
         lastIndex = index
       })
     };
-    public func search(nfa: NFA, text: Text, flags: ?Flags): Result.Result<Match, MatchError> {
+
+    private func createMatch(text : Text, index : Nat, captures : Buffer.Buffer<Capture>) : Result.Result<Match, MatchError> {
+      var finalCaptures = Buffer.Buffer<(Text, Nat)>(0);
+      for (cap in captures.vals()) {
+        switch (cap.text) {
+          case (?txt) {
+            finalCaptures.add(txt, cap.groupIndex)
+          };
+          case null {}
+        }
+      };
+
+      #ok({
+        string = text;
+        value = substring(text, 0, index);
+        status = #FullMatch;
+        position = (0, index);
+        capturedGroups = ?Buffer.toArray<(Text, Nat)>(finalCaptures);
+        spans = [(0, index)];
+        lastIndex = index
+      })
+    };
+    public func search(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Match, MatchError> {
       regex := nfa;
       var startIndex = 0;
       let textSize = text.size();
 
       while (startIndex < textSize) {
-          let remainingstring: Text = substring(text, startIndex, textSize);
-          Debug.print("Searching from index " # Nat.toText(startIndex) # ": " # remainingstring);
+        let remainingstring : Text = substring(text, startIndex, textSize);
+        log("Searching from index " # Nat.toText(startIndex) # ": " # remainingstring);
 
-          // Call the match function
-          switch (match(nfa, remainingstring, flags)) {
-              case (#ok(matchResult)) {
-                  Debug.print("Match result: " # debug_show(matchResult));
-                  switch (matchResult.status) {
-                      case (#FullMatch) {
-                          Debug.print("Full match found at index " # Nat.toText(startIndex));
-                          let adjustedMatch = {
-                              string = text;
-                              value = matchResult.value;
-                              status = #FullMatch;
-                              position = (startIndex, startIndex + matchResult.position.1);
-                              capturedGroups = matchResult.capturedGroups;
-                              spans = matchResult.spans;
-                              lastIndex = startIndex + matchResult.lastIndex;
-                          };
-                          return #ok(adjustedMatch);
-                      };
-                      case (#NoMatch) {
-                          Debug.print("No match found at index " # Nat.toText(startIndex));
-                      };
-                  };
+        switch (match(nfa, remainingstring, flags)) {
+          case (#ok(matchResult)) {
+            log("Match result: " # debug_show (matchResult));
+            switch (matchResult.status) {
+              case (#FullMatch) {
+                log("Full match found at index " # Nat.toText(startIndex));
+                let adjustedMatch = {
+                  string = text;
+                  value = matchResult.value;
+                  status = #FullMatch;
+                  position = (startIndex, startIndex + matchResult.position.1);
+                  capturedGroups = matchResult.capturedGroups;
+                  spans = matchResult.spans;
+                  lastIndex = startIndex + matchResult.lastIndex
+                };
+                return #ok(adjustedMatch)
               };
-              case (#err(e)) {
-                  Debug.print("Error during match: " # debug_show(e));
-                  return #err(e);
-              };
+              case (#NoMatch) {
+                log("No match found at index " # Nat.toText(startIndex))
+              }
+            }
           };
-          startIndex += 1;
+          case (#err(e)) {
+            log("Error during match: " # debug_show (e));
+            return #err(e)
+          }
+        };
+        startIndex += 1
       };
-      Debug.print("No full match found after searching the entire text.");
+      log("No full match found after searching the entire text.");
       return #ok({
-          string = text;
-          value = "";
-          status = #NoMatch;
-          position = (0, 0);
-          capturedGroups = null;
-          spans = [];
-          lastIndex = 0;
-      });
-  };
+        string = text;
+        value = "";
+        status = #NoMatch;
+        position = (0, 0);
+        capturedGroups = null;
+        spans = [];
+        lastIndex = 0
+      })
+    };
     public func findAll(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<[Match], MatchError> {
       regex := nfa;
       var startIndex = 0;
