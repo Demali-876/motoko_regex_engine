@@ -238,85 +238,81 @@ module {
       let textSize = text.size();
 
       while (startIndex < textSize) {
-        let remainingstring : Text = substring(text, startIndex, textSize);
-        log("Searching from index " # Nat.toText(startIndex) # ": " # remainingstring);
+          let char = charAt(startIndex, text);
+          let transitions = regex.transitionTable[regex.startState];
+          var validTransition = false;
 
-        switch (match(nfa, remainingstring, flags)) {
-          case (#ok(matchResult)) {
-            log("Match result: " # debug_show (matchResult));
-            switch (matchResult.status) {
-              case (#FullMatch) {
-                log("Full match found at index " # Nat.toText(startIndex));
-                let adjustedMatch = {
-                  string = text;
-                  value = matchResult.value;
-                  status = #FullMatch;
-                  position = (startIndex, startIndex + matchResult.position.1);
-                  capturedGroups = matchResult.capturedGroups;
-                  spans = matchResult.spans;
-                  lastIndex = startIndex + matchResult.lastIndex
-                };
-                return #ok(adjustedMatch)
-              };
-              case (#NoMatch) {
-                log("No match found at index " # Nat.toText(startIndex))
+          label searchforvalidstart for (t in transitions.vals()) {
+              switch (t.1) {
+                  case (#Char(c)) {
+                      if (compareChars(char, c, flags)) {
+                          validTransition := true;
+                          break searchforvalidstart;
+                      }
+                  };
+                  case (#Range((start, end))) {
+                      if (isInRange(char, start, end, flags)) {
+                          validTransition := true;
+                          break searchforvalidstart;
+                      }
+                  };
               }
-            }
           };
-          case (#err(e)) {
-            log("Error during match: " # debug_show (e));
-            return #err(e)
-          }
-        };
-        startIndex += 1
+          if (validTransition) {
+              switch (match(nfa, substring(text, startIndex, textSize), flags)) {
+                  case (#ok(matchResult)) {return #ok(matchResult)};
+                  case (#err(e)) {return #err(e)};
+              }
+          };
+          startIndex += 1;
       };
-      log("No full match found after searching the entire text.");
       return #ok({
-        string = text;
-        value = "";
-        status = #NoMatch;
-        position = (0, 0);
-        capturedGroups = null;
-        spans = [];
-        lastIndex = 0
-      })
-    };
+          string = text;
+          value = "";
+          status = #NoMatch;
+          position = (0, 0);
+          capturedGroups = null;
+          spans = [];
+          lastIndex = 0
+      });
+  };
+
+
     public func findAll(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<[Match], MatchError> {
-      regex := nfa;
       var startIndex = 0;
       let textSize = text.size();
       var matches = Buffer.Buffer<Match>(0);
 
       while (startIndex < textSize) {
-        let remainingString : Text = substring(text, startIndex, textSize);
-        switch (search(nfa, remainingString, flags)) {
-          case (#ok(matchResult)) {
-            switch (matchResult.status) {
-              case (#FullMatch) {
-                let adjustedMatch = {
-                  string = text;
-                  value = matchResult.value;
-                  status = #FullMatch;
-                  position = (startIndex + matchResult.position.0, startIndex + matchResult.position.1);
-                  capturedGroups = matchResult.capturedGroups;
-                  spans = matchResult.spans;
-                  lastIndex = startIndex + matchResult.lastIndex
-                };
-                matches.add(adjustedMatch);
-                startIndex := adjustedMatch.lastIndex
+          switch (search(nfa, substring(text, startIndex, textSize), flags)) {
+              case (#ok(matchResult)) {
+                  switch (matchResult.status) {
+                      case (#FullMatch) {
+                          let adjustedMatch = {
+                              string = text;
+                              value = matchResult.value;
+                              status = #FullMatch;
+                              position = (startIndex + matchResult.position.0, startIndex + matchResult.position.1);
+                              capturedGroups = matchResult.capturedGroups;
+                              spans = matchResult.spans;
+                              lastIndex = startIndex + matchResult.lastIndex
+                          };
+                          matches.add(adjustedMatch);
+                          startIndex := adjustedMatch.lastIndex;
+                      };
+                      case (#NoMatch) {
+                          startIndex += 1;
+                      }
+                  }
               };
-              case (#NoMatch) {
-                startIndex += 1
+              case (#err(e)) {
+                  return #err(e);
               }
-            }
-          };
-          case (#err(e)) {
-            return #err(e)
           }
-        }
       };
-      return #ok(Buffer.toArray(matches))
-    };
+      return #ok(Buffer.toArray(matches));
+  };
+
     public func findIter(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Iter.Iter<Match>, MatchError> {
       switch (findAll(nfa, text, flags)) {
         case (#ok(matches)) {
