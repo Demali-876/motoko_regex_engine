@@ -1,3 +1,5 @@
+## [1.22.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.22.0...v1.22.1) (2024-11-28)
+
 # [1.22.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.21.0...v1.22.0) (2024-11-28)
 
 
