@@ -214,13 +214,12 @@
 <p>Quantifiers can operate in different modes:</p>
 <ul>
 <li><strong>Greedy:</strong> Matches as many occurrences as possible.</li>
-<li><strong>Lazy (<code>?</code> after quantifier):</strong> Matches as few as possible. E.g., <code>a*?</code> matches fewer occurrences of "a".</li>
-<li><strong>Possessive (<code>+</code> after quantifier):</strong> Prevents backtracking. E.g., <code>a*+</code>.</li>
+<li><strong>Lazy (<code>?</code> after quantifier):</strong> Matches as few as possible. E.g., <code>a+?</code> matches fewer occurrences of "a".</li>
 </ul>
 <h3 id="invalid-quantifiers"><a class="header" href="#invalid-quantifiers">Invalid Quantifiers</a></h3>
 <p>Certain quantifier patterns are not allowed:</p>
 <ul>
-<li>Redundant modifiers, such as <code>a{2}+</code> or <code>a{2}?+</code>.</li>
+<li>Redundant modifiers, such as <code>a{2}+</code> or <code>a{2}*</code>.</li>
 <li>Empty quantifiers, e.g., <code>{}</code> or <code>{,}</code>.</li>
 <li>Multiple commas in ranges, e.g., <code>{2,,4}</code>.</li>
 </ul>
@@ -319,7 +318,7 @@
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="module-contents.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="flags.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -333,13 +332,29 @@
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="module-contents.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="flags.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

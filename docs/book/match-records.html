@@ -152,12 +152,78 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>The <code>Match</code> record represents the result of a pattern matching operation on text, typically used in regular expression or string matching operations. It contains detailed information about what was matched, where it was found, and any captured groups within the match.</p>
+<h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
+<pre><code class="language-motoko">public type Match = {
+    string: Text;
+    value: Text;
+    status: {
+        #FullMatch;
+        #NoMatch;
+    };
+    position: (Nat, Nat);
+    capturedGroups: ?[(Text,Nat)];
+    spans: [(Nat, Nat)];
+    lastIndex: Nat;
+};
+</code></pre>
+<h2 id="field-descriptions"><a class="header" href="#field-descriptions">Field Descriptions</a></h2>
+<h3 id="string-text"><a class="header" href="#string-text">string: Text</a></h3>
+<p>The original input string that was searched for matches. This field preserves the complete text that was analyzed during the matching operation.</p>
+<h3 id="value-text"><a class="header" href="#value-text">value: Text</a></h3>
+<p>The actual matched substring found in the original text. This represents the specific portion of text that satisfied the matching criteria.</p>
+<h3 id="status"><a class="header" href="#status">status</a></h3>
+<p>An enumerated type that indicates the match result:</p>
+<ul>
+<li><code>#FullMatch</code>: Indicates a successful match was found</li>
+<li><code>#NoMatch</code>: Indicates no match was found in the input string</li>
+</ul>
+<h3 id="position-nat-nat"><a class="header" href="#position-nat-nat">position: (Nat, Nat)</a></h3>
+<p>A tuple containing the start and end indices of the match in the original string:</p>
+<ul>
+<li>First value: Starting index of the match</li>
+<li>Second value: Ending index of the match</li>
+</ul>
+<h3 id="capturedgroups-textnat"><a class="header" href="#capturedgroups-textnat">capturedGroups: ?[(Text,Nat)]</a></h3>
+<p>An optional array of tuples containing captured groups from the match:</p>
+<ul>
+<li>Each tuple contains:
+<ul>
+<li>Text: The captured text</li>
+<li>Nat: The index of the captured group</li>
+</ul>
+</li>
+<li><code>null</code> if no groups were captured</li>
+</ul>
+<h3 id="spans-nat-nat"><a class="header" href="#spans-nat-nat">spans: [(Nat, Nat)]</a></h3>
+<p>An array of tuples representing the character spans of the respective match</p>
+<h3 id="lastindex-nat"><a class="header" href="#lastindex-nat">lastIndex: Nat</a></h3>
+<p>The index where the last match ended. This is particularly useful when performing multiple sequential matches on the same text.</p>
+<h2 id="usage-examples"><a class="header" href="#usage-examples">Usage Examples</a></h2>
+<h3 id="basic-match-checking"><a class="header" href="#basic-match-checking">Basic Match Checking</a></h3>
+<pre><code class="language-motoko">if (matchResult.status == #FullMatch) {
+    Debug.print("Found match: " # matchResult.value);
+} else {
+    Debug.print("No match found");
+};
+</code></pre>
+<h3 id="working-with-captured-groups"><a class="header" href="#working-with-captured-groups">Working with Captured Groups</a></h3>
+<pre><code class="language-motoko">switch (matchResult.capturedGroups) {
+    case (null) { Debug.print("No groups captured") };
+    case (?groups) {
+        for ((text, index) in groups.vals()) {
+            Debug.print("Group " # debug_show(index) # ": " # text);
+        };
+    };
+};
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="regex-objects.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="functions/finditer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -171,7 +237,7 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="regex-objects.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="functions/finditer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
@@ -182,6 +248,22 @@
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 

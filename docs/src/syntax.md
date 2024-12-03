@@ -52,14 +52,13 @@ Quantifiers specify how many times a preceding element must occur for a match.
 Quantifiers can operate in different modes:
 
 - **Greedy:** Matches as many occurrences as possible.
-- **Lazy (`?` after quantifier):** Matches as few as possible. E.g., `a*?` matches fewer occurrences of "a".
-- **Possessive (`+` after quantifier):** Prevents backtracking. E.g., `a*+`.
+- **Lazy (`?` after quantifier):** Matches as few as possible. E.g., `a+?` matches fewer occurrences of "a".
 
 ### Invalid Quantifiers
 
 Certain quantifier patterns are not allowed:
 
-- Redundant modifiers, such as `a{2}+` or `a{2}?+`.
+- Redundant modifiers, such as `a{2}+` or `a{2}*`.
 - Empty quantifiers, e.g., `{}` or `{,}`.
 - Multiple commas in ranges, e.g., `{2,,4}`.
 

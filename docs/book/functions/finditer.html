@@ -152,7 +152,47 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>The <code>findIter()</code> method returns an iterator that yields all non-overlapping matches of the regex pattern in the input text. This method is memory-efficient as it generates matches lazily instead of collecting them all at once like <code>findAll()</code>.</p>
+<h2 id="signature"><a class="header" href="#signature">Signature</a></h2>
+<pre><code class="language-motoko">public func findIter(text: Text): Result.Result&lt;Iter.Iter&lt;Match&gt;, RegexError&gt;
+</code></pre>
+<h2 id="parameters"><a class="header" href="#parameters">Parameters</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td>text</td><td>Text</td><td>The input string to search for matches</td></tr>
+</tbody></table>
+</div>
+<h2 id="return-value"><a class="header" href="#return-value">Return Value</a></h2>
+<p><strong>Type</strong>: <code>Result.Result&lt;Iter.Iter&lt;Match&gt;, RegexError&gt;</code></p>
+<h3 id="success-case"><a class="header" href="#success-case">Success Case</a></h3>
+<p>Returns an iterator that yields <code>Match</code> objects, where each contains:</p>
+<ul>
+<li>The matched substring (<code>value</code>)</li>
+<li>The position of the match within the input string</li>
+<li>Any captured groups</li>
+<li>Match status (<code>#FullMatch</code>)</li>
+</ul>
+<h3 id="error-case"><a class="header" href="#error-case">Error Case</a></h3>
+<p>Returns <code>RegexError</code> (<code>#NotCompiled</code>) if the pattern failed to compile during instantiation</p>
+<h3 id="iteration-process"><a class="header" href="#iteration-process">Iteration Process</a></h3>
+<ol>
+<li>Starts from the beginning of the input string</li>
+<li>For each match found:
+<ul>
+<li>Yields a <code>Match</code> object</li>
+<li>Advances to the position after the current match</li>
+</ul>
+</li>
+<li>Continues until no more matches are found</li>
+<li>Automatically handles the internal state between iterations</li>
+</ol>
+<h3 id="match-generation"><a class="header" href="#match-generation">Match Generation</a></h3>
+<ul>
+<li>Matches are generated one at a time as the iterator is consumed</li>
+<li>Non-overlapping matches are guaranteed</li>
+<li>The iteration order follows the text from left to right</li>
+</ul>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
@@ -161,7 +201,7 @@
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../exceptions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../match-records.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -175,13 +215,29 @@
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../exceptions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../match-records.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 
