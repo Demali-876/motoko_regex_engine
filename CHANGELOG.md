@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.22.1...v1.23.0) (2024-12-03)
+
+
+### Performance Improvements
+
+* **matcher:** TBR Search implementation ([353d579](https://github.com/Demali-876/motoko_regex_engine/commit/353d579ee3d97bafa335e365e06dba7fed62c129))
+
 ## [1.22.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.22.0...v1.22.1) (2024-11-28)
 
 # [1.22.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.21.0...v1.22.0) (2024-11-28)
