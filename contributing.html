@@ -152,7 +152,151 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="contributing-to-motoko-regex-engine"><a class="header" href="#contributing-to-motoko-regex-engine">Contributing to Motoko Regex Engine</a></h1>
+<p>Thank you for your interest in contributing to the Motoko Regex Engine project! This guide will help you get started with contributing to the project.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ul>
+<li><a href="#contributing-to-motoko-regex-engine">Contributing to Motoko Regex Engine</a>
+<ul>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#development-process">Development Process</a></li>
+<li><a href="#commit-guidelines">Commit Guidelines</a></li>
+<li><a href="#pull-request-process">Pull Request Process</a></li>
+<li><a href="#testing-requirements">Testing Requirements</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<ol>
+<li>
+<p>Fork the repository:</p>
+<ul>
+<li>Visit <a href="https://github.com/Demali-876/motoko_regex_engine">https://github.com/Demali-876/motoko_regex_engine</a></li>
+<li>Click the "Fork" button in the top-right corner</li>
+</ul>
+</li>
+<li>
+<p>Clone your fork:</p>
+<pre><code class="language-bash">git clone https://github.com/YOUR-USERNAME/motoko_regex_engine.git
+cd motoko_regex_engine
+</code></pre>
+</li>
+<li>
+<p>Add the upstream repository:</p>
+<pre><code class="language-bash">git remote add upstream https://github.com/Demali-876/motoko_regex_engine.git
+</code></pre>
+</li>
+<li>
+<p>Create a new branch for your work:</p>
+<pre><code class="language-bash">git checkout -b feat/your-feature-name
+</code></pre>
+</li>
+</ol>
+<h2 id="development-process"><a class="header" href="#development-process">Development Process</a></h2>
+<ol>
+<li>
+<p>Set up your development environment:</p>
+<ul>
+<li>Install the DFINITY SDK (dfx)</li>
+<li>Install Node.js and npm</li>
+<li>Run <code>npm install</code> to install dependencies</li>
+</ul>
+</li>
+<li>
+<p>Make your changes:</p>
+<ul>
+<li>Keep your changes focused and concise</li>
+<li>Update documentation if needed</li>
+</ul>
+</li>
+<li>
+<p>Keep your fork up to date:</p>
+<pre><code class="language-bash">git fetch upstream
+git rebase upstream/main
+</code></pre>
+</li>
+</ol>
+<h2 id="commit-guidelines"><a class="header" href="#commit-guidelines">Commit Guidelines</a></h2>
+<p>We use <a href="https://www.conventionalcommits.org/">Conventional Commits</a> for clear and standardized commit messages. Each commit message should be structured as follows:</p>
+<pre><code>&lt;type&gt;[optional scope]: &lt;description&gt;
+
+[optional body]
+
+[optional footer(s)]
+</code></pre>
+<p>Types:</p>
+<ul>
+<li><code>feat</code>: A new feature</li>
+<li><code>fix</code>: A bug fix</li>
+<li><code>docs</code>: Documentation only changes</li>
+<li><code>style</code>: Changes that do not affect the meaning of the code</li>
+<li><code>refactor</code>: A code change that neither fixes a bug nor adds a feature</li>
+<li><code>perf</code>: A code change that improves performance</li>
+<li><code>test</code>: Adding missing tests or correcting existing tests</li>
+<li><code>chore</code>: Changes to the build process or auxiliary tools</li>
+</ul>
+<p>Examples:</p>
+<pre><code>feat(parser): add support for lookahead assertions
+
+fix(matcher): resolve infinite loop in nested groups
+
+docs: update API documentation for search method
+
+refactor(compiler): simplify NFA construction logic
+</code></pre>
+<h2 id="pull-request-process"><a class="header" href="#pull-request-process">Pull Request Process</a></h2>
+<ol>
+<li>
+<p>Push your changes to your fork:</p>
+<pre><code class="language-bash">git push origin feat/your-feature-name
+</code></pre>
+</li>
+<li>
+<p>Create a Pull Request:</p>
+<ul>
+<li>Go to <a href="https://github.com/Demali-876/motoko_regex_engine/pulls">https://github.com/Demali-876/motoko_regex_engine/pulls</a></li>
+<li>Click "New Pull Request"</li>
+<li>Select your fork and branch</li>
+<li>Fill out the PR template with:
+<ul>
+<li>Clear description of changes</li>
+<li>Any breaking changes</li>
+<li>Evidence of testing (screenshots, console output, etc.)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>PR Review Process:</p>
+<ul>
+<li>Maintainers will review your PR</li>
+<li>Address any requested changes</li>
+<li>Once approved, your PR will be merged</li>
+</ul>
+</li>
+</ol>
+<h2 id="testing-requirements"><a class="header" href="#testing-requirements">Testing Requirements</a></h2>
+<p>While formal tests are not required, you must provide evidence that you've tested your changes. This can include:</p>
+<ul>
+<li>Screenshots of the feature working</li>
+<li>Console output showing successful execution</li>
+<li>Example usage and results</li>
+<li>Description of test cases you've tried</li>
+</ul>
+<p>Example test evidence in PR:</p>
+<pre><code>Tested the new alternation operator with:
+1. Simple patterns: "a|b" against "a" and "b"
+2. Complex patterns: "(foo|bar)+" against "foofoobar"
+3. Edge cases: "a||b" and "|a|b|"
+
+Results:
+- All patterns matched correctly
+- No infinite loops or crashes
+- Proper error handling for invalid patterns
+</code></pre>
+<p>Thank you for contributing to the Motoko Regex Engine project!</p>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

@@ -263,13 +263,12 @@
 <p>Quantifiers can operate in different modes:</p>
 <ul>
 <li><strong>Greedy:</strong> Matches as many occurrences as possible.</li>
-<li><strong>Lazy (<code>?</code> after quantifier):</strong> Matches as few as possible. E.g., <code>a*?</code> matches fewer occurrences of "a".</li>
-<li><strong>Possessive (<code>+</code> after quantifier):</strong> Prevents backtracking. E.g., <code>a*+</code>.</li>
+<li><strong>Lazy (<code>?</code> after quantifier):</strong> Matches as few as possible. E.g., <code>a+?</code> matches fewer occurrences of "a".</li>
 </ul>
 <h3 id="invalid-quantifiers"><a class="header" href="#invalid-quantifiers">Invalid Quantifiers</a></h3>
 <p>Certain quantifier patterns are not allowed:</p>
 <ul>
-<li>Redundant modifiers, such as <code>a{2}+</code> or <code>a{2}?+</code>.</li>
+<li>Redundant modifiers, such as <code>a{2}+</code> or <code>a{2}*</code>.</li>
 <li>Empty quantifiers, e.g., <code>{}</code> or <code>{,}</code>.</li>
 <li>Multiple commas in ranges, e.g., <code>{2,,4}</code>.</li>
 </ul>
@@ -359,14 +358,6 @@
 </tbody></table>
 </div>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><h1 id="module-contents"><a class="header" href="#module-contents">Module Contents</a></h1>
-<p>The Motoko Regex Engine module includes the following components:</p>
-<ol>
-<li><strong>Lexer</strong>: Tokenizes the input regex pattern.</li>
-<li><strong>Parser</strong>: Converts tokens into an Abstract Syntax Tree (AST).</li>
-<li><strong>Compiler</strong>: Compiles the AST into an NFA (Non-deterministic Finite Automaton).</li>
-<li><strong>Matcher</strong>: Simulates the NFA on the input string.</li>
-</ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="flags-1"><a class="header" href="#flags-1">Flags</a></h1>
 <p>Flags in Motoko regex provide flexibility by modifying the behavior of the regex matching process. This section covers the available flags, their purpose, and how to use them effectively.</p>
 <hr />
@@ -464,43 +455,568 @@ assert(regex.search("ABC\ndef\nabc") == #FullMatch);
 <li>Use <code>multiline = true</code> when processing multi-line text, such as logs or formatted documents, where each line might have independent matching requirements.</li>
 </ul>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="searching"><a class="header" href="#searching">Searching</a></h1>
-<p>The <code>search</code> function scans the input text from left to right to find a match.</p>
-<pre><code class="language-motoko">let result = regex.search("launch icp 629-07-2021");
-switch (result) {
-  case (#Match(matchRecord)):
-    Debug.print("Search result: " # matchRecord.value);
-  case (#NoMatch):
-    Debug.print("No match found.");
-}
+<div style="break-before: page; page-break-before: always;"></div><h1 id="functions"><a class="header" href="#functions">Functions</a></h1>
+<p>This section provides an overview of the (current) functions available in this library. Use the links below to navigate to detailed documentation for each function.</p>
+<ul>
+<li><a href="functions/search.html">search()</a></li>
+<li><a href="functions/match.html">match()</a></li>
+<li><a href="functions/findall.html">findAll()</a></li>
+<li><a href="functions/finditer.html">findIter()</a></li>
+</ul>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-1"><a class="header" href="#overview-1">Overview</a></h1>
+<p>The <code>search()</code> function scans an input string for the first occurrence of the regex pattern. Unlike <code>match()</code>, which requires the pattern to span the entire input, <code>search()</code> identifies the first substring that satisfies the pattern.</p>
+<h2 id="signature"><a class="header" href="#signature">Signature</a></h2>
+<pre><code class="language-motoko">public func search(text: Text): Result.Result&lt;Match, RegexError&gt;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="matching"><a class="header" href="#matching">Matching</a></h1>
-<pre><code class="language-motoko">let regex = Regex.Regex("\d{3}-\d{2}-\d{4}", null);
-let result = regex.match("629-07-2021");
-
-switch (result) {
-  case (#Match(matchRecord)):
-    Debug.print("Match found: " # matchRecord.value);
-  case (#NoMatch):
-    Debug.print("No match found.");
-}
-</code></pre>
-<h2 id="understanding-the-matcher"><a class="header" href="#understanding-the-matcher">Understanding the Matcher</a></h2>
-<p>The matcher evaluates the input text against the regex pattern using the following principles:</p>
+<h2 id="parameters"><a class="header" href="#parameters">Parameters</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td>text</td><td>Text</td><td>The input string to search for the first match</td></tr>
+</tbody></table>
+</div>
+<h2 id="return-value"><a class="header" href="#return-value">Return Value</a></h2>
+<p><strong>Type</strong>: <code>Result.Result&lt;Match, RegexError&gt;</code></p>
+<h3 id="success-case"><a class="header" href="#success-case">Success Case</a></h3>
+<p>Returns a <code>Match</code> object containing:</p>
+<ul>
+<li>The matched substring (<code>value</code>)</li>
+<li>The position of the match within the input string</li>
+<li>Captured groups (if any)</li>
+</ul>
+<h3 id="no-match-case"><a class="header" href="#no-match-case">No Match Case</a></h3>
+<p>Returns a <code>Match</code> object with:</p>
+<ul>
+<li><code>status = #NoMatch</code></li>
+<li>Empty <code>value</code></li>
+</ul>
+<h3 id="error-case"><a class="header" href="#error-case">Error Case</a></h3>
+<p>Returns <code>RegexError</code> (<code>#NotCompiled</code>) only if the pattern failed to compile during instantiation</p>
+<h2 id="behavior"><a class="header" href="#behavior">Behavior</a></h2>
+<h3 id="input-validation"><a class="header" href="#input-validation">Input Validation</a></h3>
+<ul>
+<li>If the regex instantiation failed (due to an invalid pattern), returns <code>RegexError</code> (<code>#NotCompiled</code>)</li>
+</ul>
+<h3 id="search-process"><a class="header" href="#search-process">Search Process</a></h3>
 <ol>
-<li><strong>Full Match Required</strong>: The input must traverse all states of the NFA and reach an accept state.</li>
-<li><strong>Immediate Termination</strong>: If a valid path cannot be identified, the matcher stops and returns <code>#NoMatch</code>.</li>
-<li><strong>First Match Priority</strong>: The matcher stops as soon as it finds a valid match.</li>
+<li>Scans the input string character by character</li>
+<li>Identifies if a potential match could begin at the current position</li>
+<li>Delegates to <code>match()</code> for full matching starting from that position</li>
+</ol>
+<h3 id="result-construction"><a class="header" href="#result-construction">Result Construction</a></h3>
+<ul>
+<li>On finding a match:
+<ul>
+<li>Returns a <code>Match</code> object with details of the match</li>
+</ul>
+</li>
+<li>If no match is found after scanning the string:
+<ul>
+<li>Returns a <code>Match</code> object with <code>status = #NoMatch</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="example-usage"><a class="header" href="#example-usage">Example Usage</a></h2>
+<h3 id="1-successful-match"><a class="header" href="#1-successful-match">1. Successful Match</a></h3>
+<p><strong>Pattern</strong>: <code>"a+"</code> <strong>Input</strong>: <code>"xxaaayy"</code></p>
+<pre><code class="language-motoko">let pattern = Regex.Regex("a+", null);
+let result = pattern.search("xxaaayy");
+switch (result) {
+    case (#ok(match)) Debug.print("First match: " # match.value);  // Output: "aaa"
+    case (#err(error)) Debug.print("Error: " # debug_show(error));
+};
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>First match: aaa
+</code></pre>
+<h3 id="2-no-match-found"><a class="header" href="#2-no-match-found">2. No Match Found</a></h3>
+<p><strong>Pattern</strong>: <code>"z+"</code> <strong>Input</strong>: <code>"xxaaaayy"</code></p>
+<pre><code class="language-motoko">let pattern = Regex.Regex("z+", null);
+let result = pattern.search("xxaaaayy");
+switch (result) {
+    case (#ok(match)) {
+        switch (match.status) {
+            case (#NoMatch) Debug.print("No match found.");
+            case (#FullMatch) Debug.print("First match: " # match.value);
+        };
+    };
+    case (#err(error)) Debug.print("Error: " # debug_show(error));
+};
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>No match found.
+</code></pre>
+<h3 id="3-invalid-pattern"><a class="header" href="#3-invalid-pattern">3. Invalid Pattern</a></h3>
+<p><strong>Scenario</strong>: Creating a regex with an invalid pattern</p>
+<pre><code class="language-motoko">let pattern = Regex.Regex("[a-");
+let result = pattern.search("xxaaaayy");
+switch (result) {
+    case (#ok(match)) Debug.print("First match: " # match.value);
+    case (#err(error)) Debug.print("Error: " # debug_show(error)); // Output: #NotCompiled
+};
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Error: #NotCompiled
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-2"><a class="header" href="#overview-2"><strong>Overview</strong></a></h1>
+<p>The <code>match()</code> function is a core API for performing regex-based matching. It takes an input string and matches it against a precompiled regex represented as an NFA. The function handles matching mechanics, including state transitions, greedy and lazy quantifiers, and group captures.</p>
+<hr />
+<h2 id="signature-1"><a class="header" href="#signature-1"><strong>Signature</strong></a></h2>
+<pre><code class="language-motoko">public func match(text: Text): Result.Result&lt;Match, RegexError&gt;
+</code></pre>
+<hr />
+<h3 id="parameters-1"><a class="header" href="#parameters-1"><strong>Parameters</strong></a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td><code>Text</code></td><td>The input string to be matched against the compiled regex.</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h3 id="return-value-1"><a class="header" href="#return-value-1"><strong>Return Value</strong></a></h3>
+<p><code>Result.Result&lt;Match, RegexError&gt;</code>:</p>
+<ul>
+<li><strong>On Success</strong> (<code>Match</code>):
+<ul>
+<li>Contains details of the match, such as the matched substring, captured groups, and spans.</li>
+</ul>
+</li>
+<li><strong>On Failure</strong> (<code>RegexError</code>):
+<ul>
+<li>Indicates why the matching process failed (e.g., regex not compiled).</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="behavior-1"><a class="header" href="#behavior-1"><strong>Behavior</strong></a></h3>
+<ol>
+<li>
+<p><strong>Input Validation</strong>:</p>
+<ul>
+<li>Checks if the regex has been compiled.</li>
+<li>Returns <code>#NotCompiled</code> error if the regex is unavailable.</li>
+</ul>
+</li>
+<li>
+<p><strong>Matching Process</strong>:</p>
+<ul>
+<li>Delegates the actual matching logic to the <code>matcher.match</code> function.</li>
+<li>Traverses the NFA based on input characters.</li>
+<li>Respects greedy and lazy quantifier modes.</li>
+<li>Handles capture groups and anchors (e.g., <code>^</code>, <code>$</code>).</li>
+</ul>
+</li>
+<li>
+<p><strong>Result Construction</strong>:</p>
+<ul>
+<li>Builds a <code>Match</code> object for successful matches.</li>
+<li>Returns <code>RegexError</code> for failures.</li>
+</ul>
+</li>
 </ol>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><h1 id="finding-all-matches"><a class="header" href="#finding-all-matches">Finding All Matches</a></h1>
-<p>The <code>findAll</code> function collects all occurrences of a pattern in the input.</p>
-<pre><code class="language-motoko">let result = regex.findAll("629-07-2021 and 123-45-6789");
-Debug.print("All matches: " # result);
+<h3 id="example-usage-1"><a class="header" href="#example-usage-1"><strong>Example Usage</strong></a></h3>
+<h4 id="1-successful-match-1"><a class="header" href="#1-successful-match-1"><strong>1. Successful Match</strong></a></h4>
+<pre><code class="language-motoko">let pattern = Regex.Regex("h.*o",null); 
+let result = pattern.match("hello");
+
+switch (result) {
+  case (#ok(match)) {
+    Debug.print("Matched value: " # match.value);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Matched value: hello
 </code></pre>
 <hr />
-<div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="chapter-1"><a class="header" href="#chapter-1">Chapter 1</a></h1>
-<div style="break-before: page; page-break-before: always;"></div>
+<h4 id="2-no-match"><a class="header" href="#2-no-match"><strong>2. No Match</strong></a></h4>
+<pre><code class="language-motoko">let pattern = Regex.Regex("z+",null);
+let result = pattern.match("hello");
+
+switch (result) {
+  case (#ok(match)) {
+    Debug.print("Matched value: " # match.value);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>#ok: status = #NoMatch
+</code></pre>
+<hr />
+<h4 id="input-validation-1"><a class="header" href="#input-validation-1"><strong>Input Validation</strong></a></h4>
+<ul>
+<li>
+<p>Before matching, the function ensures the regex is compiled.</p>
+</li>
+<li>
+<p>If <code>nfa</code> is <code>null</code>, the function returns:</p>
+<pre><code class="language-motoko">#err(#NotCompiled)
+</code></pre>
+</li>
+</ul>
+<hr />
+<h4 id="delegation-to-matchermatch"><a class="header" href="#delegation-to-matchermatch"><strong>Delegation to <code>matcher.match</code></strong></a></h4>
+<ul>
+<li>The compiled NFA, input <code>text</code>, and optional <code>flags</code> are passed to <code>matcher.match</code>.</li>
+<li><code>matcher.match</code> performs:
+<ul>
+<li><strong>State Transitions</strong>:
+<ul>
+<li>Moves between states in the NFA based on input characters.</li>
+</ul>
+</li>
+<li><strong>Greedy and Lazy Quantifiers</strong>:
+<ul>
+<li>Greedy quantifiers consume as much input as possible.</li>
+<li>Lazy quantifiers stop at the first valid match.</li>
+</ul>
+</li>
+<li><strong>Capture Groups</strong>:
+<ul>
+<li>Tracks and extracts group matches.</li>
+</ul>
+</li>
+<li><strong>Anchors</strong>:
+<ul>
+<li>Ensures patterns anchored to the start (<code>^</code>) or end (<code>$</code>) are respected.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-3"><a class="header" href="#overview-3">Overview</a></h1>
+<p>The <code>findAll()</code> method returns an array of all non-overlapping matches of the regex pattern in the input text. Unlike <code>findIter()</code>, this method collects all matches at once into an array.</p>
+<h2 id="signature-2"><a class="header" href="#signature-2">Signature</a></h2>
+<pre><code class="language-motoko">public func findAll(text: Text): Result.Result&lt;[Match], RegexError&gt;
+</code></pre>
+<h2 id="parameters-2"><a class="header" href="#parameters-2">Parameters</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td>text</td><td>Text</td><td>The input string to search for matches</td></tr>
+</tbody></table>
+</div>
+<h2 id="return-value-2"><a class="header" href="#return-value-2">Return Value</a></h2>
+<p><strong>Type</strong>: <code>Result.Result&lt;[Match], RegexError&gt;</code></p>
+<h3 id="success-case-1"><a class="header" href="#success-case-1">Success Case</a></h3>
+<p>Returns an array of <code>Match</code> objects, where each contains:</p>
+<ul>
+<li>The matched substring (<code>value</code>)</li>
+<li>The position of the match within the input string</li>
+<li>Any captured groups</li>
+<li>Match status (<code>#FullMatch</code>)</li>
+</ul>
+<h3 id="error-case-1"><a class="header" href="#error-case-1">Error Case</a></h3>
+<p>Returns <code>RegexError</code> (<code>#NotCompiled</code>) if the pattern failed to compile during instantiation</p>
+<h3 id="match-collection-process"><a class="header" href="#match-collection-process">Match Collection Process</a></h3>
+<ol>
+<li>Starts from the beginning of the input string</li>
+<li>Collects all non-overlapping matches into an array</li>
+<li>Preserves the order of matches as they appear in the text</li>
+<li>Returns an empty array if no matches are found</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-4"><a class="header" href="#overview-4">Overview</a></h1>
+<p>The <code>findIter()</code> method returns an iterator that yields all non-overlapping matches of the regex pattern in the input text. This method is memory-efficient as it generates matches lazily instead of collecting them all at once like <code>findAll()</code>.</p>
+<h2 id="signature-3"><a class="header" href="#signature-3">Signature</a></h2>
+<pre><code class="language-motoko">public func findIter(text: Text): Result.Result&lt;Iter.Iter&lt;Match&gt;, RegexError&gt;
+</code></pre>
+<h2 id="parameters-3"><a class="header" href="#parameters-3">Parameters</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td>text</td><td>Text</td><td>The input string to search for matches</td></tr>
+</tbody></table>
+</div>
+<h2 id="return-value-3"><a class="header" href="#return-value-3">Return Value</a></h2>
+<p><strong>Type</strong>: <code>Result.Result&lt;Iter.Iter&lt;Match&gt;, RegexError&gt;</code></p>
+<h3 id="success-case-2"><a class="header" href="#success-case-2">Success Case</a></h3>
+<p>Returns an iterator that yields <code>Match</code> objects, where each contains:</p>
+<ul>
+<li>The matched substring (<code>value</code>)</li>
+<li>The position of the match within the input string</li>
+<li>Any captured groups</li>
+<li>Match status (<code>#FullMatch</code>)</li>
+</ul>
+<h3 id="error-case-2"><a class="header" href="#error-case-2">Error Case</a></h3>
+<p>Returns <code>RegexError</code> (<code>#NotCompiled</code>) if the pattern failed to compile during instantiation</p>
+<h3 id="iteration-process"><a class="header" href="#iteration-process">Iteration Process</a></h3>
+<ol>
+<li>Starts from the beginning of the input string</li>
+<li>For each match found:
+<ul>
+<li>Yields a <code>Match</code> object</li>
+<li>Advances to the position after the current match</li>
+</ul>
+</li>
+<li>Continues until no more matches are found</li>
+<li>Automatically handles the internal state between iterations</li>
+</ol>
+<h3 id="match-generation"><a class="header" href="#match-generation">Match Generation</a></h3>
+<ul>
+<li>Matches are generated one at a time as the iterator is consumed</li>
+<li>Non-overlapping matches are guaranteed</li>
+<li>The iteration order follows the text from left to right</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-5"><a class="header" href="#overview-5">Overview</a></h1>
+<p>The <code>Match</code> record represents the result of a pattern matching operation on text, typically used in regular expression or string matching operations. It contains detailed information about what was matched, where it was found, and any captured groups within the match.</p>
+<h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
+<pre><code class="language-motoko">public type Match = {
+    string: Text;
+    value: Text;
+    status: {
+        #FullMatch;
+        #NoMatch;
+    };
+    position: (Nat, Nat);
+    capturedGroups: ?[(Text,Nat)];
+    spans: [(Nat, Nat)];
+    lastIndex: Nat;
+};
+</code></pre>
+<h2 id="field-descriptions"><a class="header" href="#field-descriptions">Field Descriptions</a></h2>
+<h3 id="string-text"><a class="header" href="#string-text">string: Text</a></h3>
+<p>The original input string that was searched for matches. This field preserves the complete text that was analyzed during the matching operation.</p>
+<h3 id="value-text"><a class="header" href="#value-text">value: Text</a></h3>
+<p>The actual matched substring found in the original text. This represents the specific portion of text that satisfied the matching criteria.</p>
+<h3 id="status"><a class="header" href="#status">status</a></h3>
+<p>An enumerated type that indicates the match result:</p>
+<ul>
+<li><code>#FullMatch</code>: Indicates a successful match was found</li>
+<li><code>#NoMatch</code>: Indicates no match was found in the input string</li>
+</ul>
+<h3 id="position-nat-nat"><a class="header" href="#position-nat-nat">position: (Nat, Nat)</a></h3>
+<p>A tuple containing the start and end indices of the match in the original string:</p>
+<ul>
+<li>First value: Starting index of the match</li>
+<li>Second value: Ending index of the match</li>
+</ul>
+<h3 id="capturedgroups-textnat"><a class="header" href="#capturedgroups-textnat">capturedGroups: ?[(Text,Nat)]</a></h3>
+<p>An optional array of tuples containing captured groups from the match:</p>
+<ul>
+<li>Each tuple contains:
+<ul>
+<li>Text: The captured text</li>
+<li>Nat: The index of the captured group</li>
+</ul>
+</li>
+<li><code>null</code> if no groups were captured</li>
+</ul>
+<h3 id="spans-nat-nat"><a class="header" href="#spans-nat-nat">spans: [(Nat, Nat)]</a></h3>
+<p>An array of tuples representing the character spans of the respective match</p>
+<h3 id="lastindex-nat"><a class="header" href="#lastindex-nat">lastIndex: Nat</a></h3>
+<p>The index where the last match ended. This is particularly useful when performing multiple sequential matches on the same text.</p>
+<h2 id="usage-examples"><a class="header" href="#usage-examples">Usage Examples</a></h2>
+<h3 id="basic-match-checking"><a class="header" href="#basic-match-checking">Basic Match Checking</a></h3>
+<pre><code class="language-motoko">if (matchResult.status == #FullMatch) {
+    Debug.print("Found match: " # matchResult.value);
+} else {
+    Debug.print("No match found");
+};
+</code></pre>
+<h3 id="working-with-captured-groups"><a class="header" href="#working-with-captured-groups">Working with Captured Groups</a></h3>
+<pre><code class="language-motoko">switch (matchResult.capturedGroups) {
+    case (null) { Debug.print("No groups captured") };
+    case (?groups) {
+        for ((text, index) in groups.vals()) {
+            Debug.print("Group " # debug_show(index) # ": " # text);
+        };
+    };
+};
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="regex-examples-for-motoko-regex-engine"><a class="header" href="#regex-examples-for-motoko-regex-engine">Regex Examples for Motoko Regex Engine</a></h1>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ul>
+<li><a href="examples.html#regex-examples-for-motoko-regex-engine">Regex Examples for Motoko Regex Engine</a>
+<ul>
+<li><a href="examples.html#table-of-contents">Table of Contents</a></li>
+<li><a href="examples.html#internet-computer-identifiers">Internet Computer Identifiers</a>
+<ul>
+<li><a href="examples.html#principal-id">Principal ID</a></li>
+<li><a href="examples.html#account-id">Account ID</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="internet-computer-identifiers"><a class="header" href="#internet-computer-identifiers">Internet Computer Identifiers</a></h2>
+<h3 id="principal-id"><a class="header" href="#principal-id">Principal ID</a></h3>
+<p>Pattern to validate Principal ID format.</p>
+<pre><code class="language-motoko">// Anonymous Principal will be rejected
+let principalPattern = Regex.Regex("^[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{3}$", null);
+public func validatePrincipalId(id: Text): Bool {
+    switch(principalPattern.match(id)) {
+        case (#ok(result)) {
+            switch(result.status) {
+                case (#FullMatch) true;
+                case (#NoMatch) false;
+            };
+        };
+        case (#err(_)) false;
+    };
+};
+</code></pre>
+<h3 id="account-id"><a class="header" href="#account-id">Account ID</a></h3>
+<p>Pattern to validate Account ID format.</p>
+<pre><code class="language-motoko">// Account ID (32 bytes in hexadecimal)
+let accountPattern = Regex.Regex("^[0-9a-f]{64}$", null);
+public func validateAccountId(id: Text): Bool {
+    switch(accountPattern.match(id)) {
+        case (#ok(result)) {
+            switch(result.status) {
+                case (#FullMatch) true;
+                case (#NoMatch) false;
+            };
+        };
+        case (#err(_)) false;
+    };
+};
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="contributing-to-motoko-regex-engine"><a class="header" href="#contributing-to-motoko-regex-engine">Contributing to Motoko Regex Engine</a></h1>
+<p>Thank you for your interest in contributing to the Motoko Regex Engine project! This guide will help you get started with contributing to the project.</p>
+<h2 id="table-of-contents-1"><a class="header" href="#table-of-contents-1">Table of Contents</a></h2>
+<ul>
+<li><a href="contributing.html#contributing-to-motoko-regex-engine">Contributing to Motoko Regex Engine</a>
+<ul>
+<li><a href="contributing.html#table-of-contents">Table of Contents</a></li>
+<li><a href="contributing.html#getting-started">Getting Started</a></li>
+<li><a href="contributing.html#development-process">Development Process</a></li>
+<li><a href="contributing.html#commit-guidelines">Commit Guidelines</a></li>
+<li><a href="contributing.html#pull-request-process">Pull Request Process</a></li>
+<li><a href="contributing.html#testing-requirements">Testing Requirements</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<ol>
+<li>
+<p>Fork the repository:</p>
+<ul>
+<li>Visit <a href="https://github.com/Demali-876/motoko_regex_engine">https://github.com/Demali-876/motoko_regex_engine</a></li>
+<li>Click the "Fork" button in the top-right corner</li>
+</ul>
+</li>
+<li>
+<p>Clone your fork:</p>
+<pre><code class="language-bash">git clone https://github.com/YOUR-USERNAME/motoko_regex_engine.git
+cd motoko_regex_engine
+</code></pre>
+</li>
+<li>
+<p>Add the upstream repository:</p>
+<pre><code class="language-bash">git remote add upstream https://github.com/Demali-876/motoko_regex_engine.git
+</code></pre>
+</li>
+<li>
+<p>Create a new branch for your work:</p>
+<pre><code class="language-bash">git checkout -b feat/your-feature-name
+</code></pre>
+</li>
+</ol>
+<h2 id="development-process"><a class="header" href="#development-process">Development Process</a></h2>
+<ol>
+<li>
+<p>Set up your development environment:</p>
+<ul>
+<li>Install the DFINITY SDK (dfx)</li>
+<li>Install Node.js and npm</li>
+<li>Run <code>npm install</code> to install dependencies</li>
+</ul>
+</li>
+<li>
+<p>Make your changes:</p>
+<ul>
+<li>Keep your changes focused and concise</li>
+<li>Update documentation if needed</li>
+</ul>
+</li>
+<li>
+<p>Keep your fork up to date:</p>
+<pre><code class="language-bash">git fetch upstream
+git rebase upstream/main
+</code></pre>
+</li>
+</ol>
+<h2 id="commit-guidelines"><a class="header" href="#commit-guidelines">Commit Guidelines</a></h2>
+<p>We use <a href="https://www.conventionalcommits.org/">Conventional Commits</a> for clear and standardized commit messages. Each commit message should be structured as follows:</p>
+<pre><code>&lt;type&gt;[optional scope]: &lt;description&gt;
+
+[optional body]
+
+[optional footer(s)]
+</code></pre>
+<p>Types:</p>
+<ul>
+<li><code>feat</code>: A new feature</li>
+<li><code>fix</code>: A bug fix</li>
+<li><code>docs</code>: Documentation only changes</li>
+<li><code>style</code>: Changes that do not affect the meaning of the code</li>
+<li><code>refactor</code>: A code change that neither fixes a bug nor adds a feature</li>
+<li><code>perf</code>: A code change that improves performance</li>
+<li><code>test</code>: Adding missing tests or correcting existing tests</li>
+<li><code>chore</code>: Changes to the build process or auxiliary tools</li>
+</ul>
+<p>Examples:</p>
+<pre><code>feat(parser): add support for lookahead assertions
+
+fix(matcher): resolve infinite loop in nested groups
+
+docs: update API documentation for search method
+
+refactor(compiler): simplify NFA construction logic
+</code></pre>
+<h2 id="pull-request-process"><a class="header" href="#pull-request-process">Pull Request Process</a></h2>
+<ol>
+<li>
+<p>Push your changes to your fork:</p>
+<pre><code class="language-bash">git push origin feat/your-feature-name
+</code></pre>
+</li>
+<li>
+<p>Create a Pull Request:</p>
+<ul>
+<li>Go to <a href="https://github.com/Demali-876/motoko_regex_engine/pulls">https://github.com/Demali-876/motoko_regex_engine/pulls</a></li>
+<li>Click "New Pull Request"</li>
+<li>Select your fork and branch</li>
+<li>Fill out the PR template with:
+<ul>
+<li>Clear description of changes</li>
+<li>Any breaking changes</li>
+<li>Evidence of testing (screenshots, console output, etc.)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>PR Review Process:</p>
+<ul>
+<li>Maintainers will review your PR</li>
+<li>Address any requested changes</li>
+<li>Once approved, your PR will be merged</li>
+</ul>
+</li>
+</ol>
+<h2 id="testing-requirements"><a class="header" href="#testing-requirements">Testing Requirements</a></h2>
+<p>While formal tests are not required, you must provide evidence that you've tested your changes. This can include:</p>
+<ul>
+<li>Screenshots of the feature working</li>
+<li>Console output showing successful execution</li>
+<li>Example usage and results</li>
+<li>Description of test cases you've tried</li>
+</ul>
+<p>Example test evidence in PR:</p>
+<pre><code>Tested the new alternation operator with:
+1. Simple patterns: "a|b" against "a" and "b"
+2. Complex patterns: "(foo|bar)+" against "foofoobar"
+3. Edge cases: "a||b" and "|a|b|"
+
+Results:
+- All patterns matched correctly
+- No infinite loops or crashes
+- Proper error handling for invalid patterns
+</code></pre>
+<p>Thank you for contributing to the Motoko Regex Engine project!</p>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

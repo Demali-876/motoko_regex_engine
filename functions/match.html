@@ -152,24 +152,137 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="matching"><a class="header" href="#matching">Matching</a></h1>
-<pre><code class="language-motoko">let regex = Regex.Regex("\d{3}-\d{2}-\d{4}", null);
-let result = regex.match("629-07-2021");
+                        <h1 id="overview"><a class="header" href="#overview"><strong>Overview</strong></a></h1>
+<p>The <code>match()</code> function is a core API for performing regex-based matching. It takes an input string and matches it against a precompiled regex represented as an NFA. The function handles matching mechanics, including state transitions, greedy and lazy quantifiers, and group captures.</p>
+<hr />
+<h2 id="signature"><a class="header" href="#signature"><strong>Signature</strong></a></h2>
+<pre><code class="language-motoko">public func match(text: Text): Result.Result&lt;Match, RegexError&gt;
+</code></pre>
+<hr />
+<h3 id="parameters"><a class="header" href="#parameters"><strong>Parameters</strong></a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td><code>Text</code></td><td>The input string to be matched against the compiled regex.</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h3 id="return-value"><a class="header" href="#return-value"><strong>Return Value</strong></a></h3>
+<p><code>Result.Result&lt;Match, RegexError&gt;</code>:</p>
+<ul>
+<li><strong>On Success</strong> (<code>Match</code>):
+<ul>
+<li>Contains details of the match, such as the matched substring, captured groups, and spans.</li>
+</ul>
+</li>
+<li><strong>On Failure</strong> (<code>RegexError</code>):
+<ul>
+<li>Indicates why the matching process failed (e.g., regex not compiled).</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="behavior"><a class="header" href="#behavior"><strong>Behavior</strong></a></h3>
+<ol>
+<li>
+<p><strong>Input Validation</strong>:</p>
+<ul>
+<li>Checks if the regex has been compiled.</li>
+<li>Returns <code>#NotCompiled</code> error if the regex is unavailable.</li>
+</ul>
+</li>
+<li>
+<p><strong>Matching Process</strong>:</p>
+<ul>
+<li>Delegates the actual matching logic to the <code>matcher.match</code> function.</li>
+<li>Traverses the NFA based on input characters.</li>
+<li>Respects greedy and lazy quantifier modes.</li>
+<li>Handles capture groups and anchors (e.g., <code>^</code>, <code>$</code>).</li>
+</ul>
+</li>
+<li>
+<p><strong>Result Construction</strong>:</p>
+<ul>
+<li>Builds a <code>Match</code> object for successful matches.</li>
+<li>Returns <code>RegexError</code> for failures.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h3 id="example-usage"><a class="header" href="#example-usage"><strong>Example Usage</strong></a></h3>
+<h4 id="1-successful-match"><a class="header" href="#1-successful-match"><strong>1. Successful Match</strong></a></h4>
+<pre><code class="language-motoko">let pattern = Regex.Regex("h.*o",null); 
+let result = pattern.match("hello");
 
 switch (result) {
-  case (#Match(matchRecord)):
-    Debug.print("Match found: " # matchRecord.value);
-  case (#NoMatch):
-    Debug.print("No match found.");
+  case (#ok(match)) {
+    Debug.print("Matched value: " # match.value);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
 }
 </code></pre>
-<h2 id="understanding-the-matcher"><a class="header" href="#understanding-the-matcher">Understanding the Matcher</a></h2>
-<p>The matcher evaluates the input text against the regex pattern using the following principles:</p>
-<ol>
-<li><strong>Full Match Required</strong>: The input must traverse all states of the NFA and reach an accept state.</li>
-<li><strong>Immediate Termination</strong>: If a valid path cannot be identified, the matcher stops and returns <code>#NoMatch</code>.</li>
-<li><strong>First Match Priority</strong>: The matcher stops as soon as it finds a valid match.</li>
-</ol>
+<p><strong>Output</strong>:</p>
+<pre><code>Matched value: hello
+</code></pre>
+<hr />
+<h4 id="2-no-match"><a class="header" href="#2-no-match"><strong>2. No Match</strong></a></h4>
+<pre><code class="language-motoko">let pattern = Regex.Regex("z+",null);
+let result = pattern.match("hello");
+
+switch (result) {
+  case (#ok(match)) {
+    Debug.print("Matched value: " # match.value);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>#ok: status = #NoMatch
+</code></pre>
+<hr />
+<h4 id="input-validation"><a class="header" href="#input-validation"><strong>Input Validation</strong></a></h4>
+<ul>
+<li>
+<p>Before matching, the function ensures the regex is compiled.</p>
+</li>
+<li>
+<p>If <code>nfa</code> is <code>null</code>, the function returns:</p>
+<pre><code class="language-motoko">#err(#NotCompiled)
+</code></pre>
+</li>
+</ul>
+<hr />
+<h4 id="delegation-to-matchermatch"><a class="header" href="#delegation-to-matchermatch"><strong>Delegation to <code>matcher.match</code></strong></a></h4>
+<ul>
+<li>The compiled NFA, input <code>text</code>, and optional <code>flags</code> are passed to <code>matcher.match</code>.</li>
+<li><code>matcher.match</code> performs:
+<ul>
+<li><strong>State Transitions</strong>:
+<ul>
+<li>Moves between states in the NFA based on input characters.</li>
+</ul>
+</li>
+<li><strong>Greedy and Lazy Quantifiers</strong>:
+<ul>
+<li>Greedy quantifiers consume as much input as possible.</li>
+<li>Lazy quantifiers stop at the first valid match.</li>
+</ul>
+</li>
+<li><strong>Capture Groups</strong>:
+<ul>
+<li>Tracks and extracts group matches.</li>
+</ul>
+</li>
+<li><strong>Anchors</strong>:
+<ul>
+<li>Ensures patterns anchored to the start (<code>^</code>) or end (<code>$</code>) are respected.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 <hr />
 
                     </main>

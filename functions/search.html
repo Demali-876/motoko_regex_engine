@@ -152,15 +152,98 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="searching"><a class="header" href="#searching">Searching</a></h1>
-<p>The <code>search</code> function scans the input text from left to right to find a match.</p>
-<pre><code class="language-motoko">let result = regex.search("launch icp 629-07-2021");
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>The <code>search()</code> function scans an input string for the first occurrence of the regex pattern. Unlike <code>match()</code>, which requires the pattern to span the entire input, <code>search()</code> identifies the first substring that satisfies the pattern.</p>
+<h2 id="signature"><a class="header" href="#signature">Signature</a></h2>
+<pre><code class="language-motoko">public func search(text: Text): Result.Result&lt;Match, RegexError&gt;
+</code></pre>
+<h2 id="parameters"><a class="header" href="#parameters">Parameters</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td>text</td><td>Text</td><td>The input string to search for the first match</td></tr>
+</tbody></table>
+</div>
+<h2 id="return-value"><a class="header" href="#return-value">Return Value</a></h2>
+<p><strong>Type</strong>: <code>Result.Result&lt;Match, RegexError&gt;</code></p>
+<h3 id="success-case"><a class="header" href="#success-case">Success Case</a></h3>
+<p>Returns a <code>Match</code> object containing:</p>
+<ul>
+<li>The matched substring (<code>value</code>)</li>
+<li>The position of the match within the input string</li>
+<li>Captured groups (if any)</li>
+</ul>
+<h3 id="no-match-case"><a class="header" href="#no-match-case">No Match Case</a></h3>
+<p>Returns a <code>Match</code> object with:</p>
+<ul>
+<li><code>status = #NoMatch</code></li>
+<li>Empty <code>value</code></li>
+</ul>
+<h3 id="error-case"><a class="header" href="#error-case">Error Case</a></h3>
+<p>Returns <code>RegexError</code> (<code>#NotCompiled</code>) only if the pattern failed to compile during instantiation</p>
+<h2 id="behavior"><a class="header" href="#behavior">Behavior</a></h2>
+<h3 id="input-validation"><a class="header" href="#input-validation">Input Validation</a></h3>
+<ul>
+<li>If the regex instantiation failed (due to an invalid pattern), returns <code>RegexError</code> (<code>#NotCompiled</code>)</li>
+</ul>
+<h3 id="search-process"><a class="header" href="#search-process">Search Process</a></h3>
+<ol>
+<li>Scans the input string character by character</li>
+<li>Identifies if a potential match could begin at the current position</li>
+<li>Delegates to <code>match()</code> for full matching starting from that position</li>
+</ol>
+<h3 id="result-construction"><a class="header" href="#result-construction">Result Construction</a></h3>
+<ul>
+<li>On finding a match:
+<ul>
+<li>Returns a <code>Match</code> object with details of the match</li>
+</ul>
+</li>
+<li>If no match is found after scanning the string:
+<ul>
+<li>Returns a <code>Match</code> object with <code>status = #NoMatch</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="example-usage"><a class="header" href="#example-usage">Example Usage</a></h2>
+<h3 id="1-successful-match"><a class="header" href="#1-successful-match">1. Successful Match</a></h3>
+<p><strong>Pattern</strong>: <code>"a+"</code> <strong>Input</strong>: <code>"xxaaayy"</code></p>
+<pre><code class="language-motoko">let pattern = Regex.Regex("a+", null);
+let result = pattern.search("xxaaayy");
 switch (result) {
-  case (#Match(matchRecord)):
-    Debug.print("Search result: " # matchRecord.value);
-  case (#NoMatch):
-    Debug.print("No match found.");
-}
+    case (#ok(match)) Debug.print("First match: " # match.value);  // Output: "aaa"
+    case (#err(error)) Debug.print("Error: " # debug_show(error));
+};
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>First match: aaa
+</code></pre>
+<h3 id="2-no-match-found"><a class="header" href="#2-no-match-found">2. No Match Found</a></h3>
+<p><strong>Pattern</strong>: <code>"z+"</code> <strong>Input</strong>: <code>"xxaaaayy"</code></p>
+<pre><code class="language-motoko">let pattern = Regex.Regex("z+", null);
+let result = pattern.search("xxaaaayy");
+switch (result) {
+    case (#ok(match)) {
+        switch (match.status) {
+            case (#NoMatch) Debug.print("No match found.");
+            case (#FullMatch) Debug.print("First match: " # match.value);
+        };
+    };
+    case (#err(error)) Debug.print("Error: " # debug_show(error));
+};
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>No match found.
+</code></pre>
+<h3 id="3-invalid-pattern"><a class="header" href="#3-invalid-pattern">3. Invalid Pattern</a></h3>
+<p><strong>Scenario</strong>: Creating a regex with an invalid pattern</p>
+<pre><code class="language-motoko">let pattern = Regex.Regex("[a-");
+let result = pattern.search("xxaaaayy");
+switch (result) {
+    case (#ok(match)) Debug.print("First match: " # match.value);
+    case (#err(error)) Debug.print("Error: " # debug_show(error)); // Output: #NotCompiled
+};
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Error: #NotCompiled
 </code></pre>
 
                     </main>

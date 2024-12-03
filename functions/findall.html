@@ -152,12 +152,35 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="finding-all-matches"><a class="header" href="#finding-all-matches">Finding All Matches</a></h1>
-<p>The <code>findAll</code> function collects all occurrences of a pattern in the input.</p>
-<pre><code class="language-motoko">let result = regex.findAll("629-07-2021 and 123-45-6789");
-Debug.print("All matches: " # result);
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>The <code>findAll()</code> method returns an array of all non-overlapping matches of the regex pattern in the input text. Unlike <code>findIter()</code>, this method collects all matches at once into an array.</p>
+<h2 id="signature"><a class="header" href="#signature">Signature</a></h2>
+<pre><code class="language-motoko">public func findAll(text: Text): Result.Result&lt;[Match], RegexError&gt;
 </code></pre>
-<hr />
+<h2 id="parameters"><a class="header" href="#parameters">Parameters</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td>text</td><td>Text</td><td>The input string to search for matches</td></tr>
+</tbody></table>
+</div>
+<h2 id="return-value"><a class="header" href="#return-value">Return Value</a></h2>
+<p><strong>Type</strong>: <code>Result.Result&lt;[Match], RegexError&gt;</code></p>
+<h3 id="success-case"><a class="header" href="#success-case">Success Case</a></h3>
+<p>Returns an array of <code>Match</code> objects, where each contains:</p>
+<ul>
+<li>The matched substring (<code>value</code>)</li>
+<li>The position of the match within the input string</li>
+<li>Any captured groups</li>
+<li>Match status (<code>#FullMatch</code>)</li>
+</ul>
+<h3 id="error-case"><a class="header" href="#error-case">Error Case</a></h3>
+<p>Returns <code>RegexError</code> (<code>#NotCompiled</code>) if the pattern failed to compile during instantiation</p>
+<h3 id="match-collection-process"><a class="header" href="#match-collection-process">Match Collection Process</a></h3>
+<ol>
+<li>Starts from the beginning of the input string</li>
+<li>Collects all non-overlapping matches into an array</li>
+<li>Preserves the order of matches as they appear in the text</li>
+<li>Returns an empty array if no matches are found</li>
+</ol>
 
                     </main>
 
