@@ -30,11 +30,8 @@ graph TD
         result[MATCH RESULT]
     end
 
-    %% Input flow
     input --> cursor
     cursor --> lexer
-
-    %% Main processing flow
     lexer --> tokens
     tokens --> parser
     parser --> ast
@@ -43,20 +40,10 @@ graph TD
     nfa --> matcher
     matcher --> result
 
-    %% API connections
     api --> lexer
     api --> parser
     api --> compiler
     api --> matcher
-
-    %% Styling
-    classDef core fill:#f5f5f5,stroke:#333,stroke-width:2px
-    classDef output fill:#e1f5fe,stroke:#333
-    classDef api fill:#fff3e0,stroke:#333,stroke-width:2px
-
-    class lexer,parser,compiler,matcher core
-    class tokens,ast,nfa,result output
-    class api api
 ```
 
 ### Component Description
