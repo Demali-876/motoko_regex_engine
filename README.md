@@ -17,6 +17,8 @@ mops add regex
 ```motoko
 import Regex "mo:regex";
 ```
+## Usage Example
+![motokoregex](https://github.com/user-attachments/assets/15698a21-6478-422a-b226-f5052f71eb80)
 
 ## Documentation
 
