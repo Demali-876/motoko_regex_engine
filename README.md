@@ -1,5 +1,5 @@
 # Motoko Regex Engine
-
+![regex1](https://github.com/user-attachments/assets/bc8e7812-6dae-46e2-a167-c569a7fd4bd1)
 A NFA based regular expression engine implemented in Motoko.
 
 ⚠️ **Note**: This project is newly released! There may still be undiscovered issues. Users are encouraged to report any bugs or provide feedback to help improve the engine.
@@ -17,6 +17,11 @@ mops add regex
 ```motoko
 import Regex "mo:regex";
 ```
+<<<<<<< HEAD
+=======
+## Usage Example
+![motokoregex](https://github.com/user-attachments/assets/15698a21-6478-422a-b226-f5052f71eb80)
+>>>>>>> 2be4923fd653665a60aba0f841555d14980b89ff
 
 ## Documentation
 
@@ -97,3 +102,4 @@ If you find this project valuable and would like to support my work on this and 
 ```motoko
 8c4ebbad19bf519e1906578f820ca4f6732ceecc1d5396e5a5713046dca251c1
 ```
+
