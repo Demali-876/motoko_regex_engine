@@ -8,11 +8,11 @@ import Iter "mo:base/Iter";
 import Debug "mo:base/Debug";
 
 module {
-  type Pattern = Text;
-  type NFA = Types.CompiledRegex;
-  type Match = Types.Match;
-  type Flags = Types.Flags;
-  type RegexError = Types.RegexError;
+  public type Pattern = Text;
+  public type NFA = Types.CompiledRegex;
+  public type Match = Types.Match;
+  public type Flags = Types.Flags;
+  public type RegexError = Types.RegexError;
 
   public class Regex(pattern: Pattern, flags: ?Flags) {
     private var compiler = Compiler.Compiler();
