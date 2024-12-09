@@ -1,3 +1,15 @@
+# [1.24.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.23.1...v1.24.0) (2024-12-09)
+
+
+### Features
+
+* **regex:** improve matching behavior and public types ([a111a0b](https://github.com/Demali-876/motoko_regex_engine/commit/a111a0b3c09da3cc665997320c161004ebb9e14b))
+
+
+### BREAKING CHANGES
+
+* **regex:** match positions and greedy behavior now work differently
+
 ## [1.23.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.23.0...v1.23.1) (2024-12-05)
 
 # [1.23.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.22.1...v1.23.0) (2024-12-03)
