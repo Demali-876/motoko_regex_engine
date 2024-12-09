@@ -2,7 +2,25 @@
 
 A NFA based regular expression engine implemented in Motoko.
 
-⚠️ **Note**: This project is currently under development and not intended for production use.
+⚠️ **Note**: This project is newly released! There may still be undiscovered issues. Users are encouraged to report any bugs or provide feedback to help improve the engine.
+
+## Installation
+
+You can install the regex engine using [MOPS](https://mops.one/):
+
+```bash
+mops add regex
+```
+
+## Import
+
+```motoko
+import Regex "mo:regex";
+```
+
+## Documentation
+
+For full documentation, visit [Motoko Regex Engine Docs](https://demali-876.github.io/motoko_regex_engine/introduction.html).
 
 ## Architecture
 
@@ -63,24 +81,6 @@ graph TD
    - AST: Tree representation of the pattern structure
    - NFA: State machine for pattern matching
    - Match Result: Final output indicating match success/failure and captures
-
-## Installation
-
-You can install the regex engine using [MOPS](https://mops.one/):
-
-```bash
-mops add regex
-```
-
-## Import
-
-```motoko
-import Regex "mo:regex";
-```
-
-## Documentation
-
-For full documentation, visit [Motoko Regex Engine Docs](https://demali-876.github.io/motoko_regex_engine/introduction.html).
 
 ## Support & Acknowledgements
 
