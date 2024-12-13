@@ -1,6 +1,6 @@
 [package]
 name = "regex"
-version = "1.23.0"
+version = "1.24.0"
 description = "Motoko regex engine for pattern matching on the Internet Computer."
 repository = "https://github.com/Demali-876/motoko_regex_engine"
 keywords = [ "regex", "pattern", "matching", "search" ]
