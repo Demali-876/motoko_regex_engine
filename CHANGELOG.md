@@ -1,3 +1,10 @@
+## [1.24.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.24.0...v1.24.1) (2025-01-03)
+
+
+### Bug Fixes
+
+* **compiler:** Concatenation Bug Prelim fix ([9965280](https://github.com/Demali-876/motoko_regex_engine/commit/99652804452d43a4f3e4f7c59d81cfa2ba1ca369))
+
 # [1.24.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.23.1...v1.24.0) (2024-12-09)
 
 
