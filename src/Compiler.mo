@@ -41,7 +41,6 @@ module {
 
           #ok({
             states = Array.tabulate<State>(maxState + 1, func(i) = i);
-            transitions = flatTransitions;
             transitionTable = transitionsByState;
             startState = startState;
             acceptStates = acceptStates;
@@ -102,7 +101,7 @@ module {
                   for (t in subTransitions.vals()) {
                     transitionBuffer.add((startState, t.1, startState, ?mode))
                   };
-                  #ok(Buffer.toArray(transitionBuffer), [startState])
+                  #ok(Buffer.toArray(transitionBuffer), [startState, startState+1])
                 }
               }
             };
@@ -274,44 +273,62 @@ module {
                 currentState += 1
               };
               acceptStates.add(currentState);
-
+              Buffer.removeDuplicates<Transition>(transitions, Extensions.transitionEquals);
               #ok(Buffer.toArray(transitions), Buffer.toArray(acceptStates))
             }
           }
         };
 
         case (#Concatenation(exprs)) {
-          switch (exprs.size()) {
-            case 0 return #err(#GenericError("Empty concatenation"));
-            case 1 return buildNFA(exprs[0], startState);
-            case _ {
-              var currentState = startState;
-              let transitionBuffer = Buffer.Buffer<Transition>(exprs.size() * 4);
+  switch (exprs.size()) {
+    case 0 return #err(#GenericError("Empty concatenation"));
+    case 1 return buildNFA(exprs[0], startState);
+    case _ {
+      var currentState = startState;
+      let transitionBuffer = Buffer.Buffer<Transition>(exprs.size() * 4);
+      let acceptStates = Buffer.Buffer<State>(4);
 
-              for (i in Iter.range(0, exprs.size() - 2)) {
-                switch (buildNFA(exprs[i], currentState)) {
-                  case (#err(e)) return #err(e);
-                  case (#ok(transitions, accepts)) {
-                    for (t in transitions.vals()) {
-                      transitionBuffer.add(t)
-                    };
-                    currentState := accepts[accepts.size() - 1]
-                  }
-                }
-              };
-              let lastIndex : Nat = exprs.size() - 1;
-              switch (buildNFA(exprs[lastIndex], currentState)) {
-                case (#err(e)) return #err(e);
-                case (#ok(transitions, accepts)) {
-                  for (t in transitions.vals()) {
-                    transitionBuffer.add(t)
-                  };
-                  #ok(Buffer.toArray(transitionBuffer), accepts)
-                }
-              }
-            }
-          }
+      switch(buildNFA(exprs[0], currentState)) {
+        case (#err(e)) return #err(e);
+        case (#ok(transitions, accepts)) {
+          for (t in transitions.vals()) {
+            transitionBuffer.add(t);
+          };
+          for (accept in accepts.vals()) {
+            acceptStates.add(accept);
+          };
+          currentState := accepts[0];
         };
+      };
+
+      for (i in Iter.range(1, exprs.size() - 1)) {
+        let thisAccepts = Buffer.Buffer<State>(4);
+        for (prevAccept in acceptStates.vals()) {
+          switch(buildNFA(exprs[i], prevAccept)) {
+            case (#err(e)) return #err(e);
+            case (#ok(transitions, accepts)) {
+              for (t in transitions.vals()) {
+                transitionBuffer.add(t);
+              };
+              for (accept in accepts.vals()) {
+                thisAccepts.add(accept);
+              };
+            };
+          };
+        };
+
+        acceptStates.clear();
+        for (accept in thisAccepts.vals()) {
+          acceptStates.add(accept);
+        };
+      };
+      Buffer.removeDuplicates<Nat>(acceptStates, Nat.compare);
+      Buffer.removeDuplicates<Transition>(transitionBuffer, Extensions.transitionEquals);
+      #ok(Buffer.toArray(transitionBuffer), Buffer.toArray<Nat>(acceptStates));
+    }
+  }
+};
+
         case (#Group({subExpr; modifier; captureIndex})) {
           switch (modifier) {
             case (? #PositiveLookahead) {
