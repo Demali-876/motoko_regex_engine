@@ -142,7 +142,6 @@ module{
 
   public type CompiledRegex = {
     states : [State];
-    transitions : [Transition];
     transitionTable : [[Transition]];
     startState : State;
     acceptStates : [State];
