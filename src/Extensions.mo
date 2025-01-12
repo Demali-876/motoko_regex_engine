@@ -382,7 +382,15 @@ module {
         };
     }
 };
-
+  public func transitionEquals(a : Transition, b : Transition) : Order.Order {
+      if (a.0 < b.0) return #less;
+      if (a.0 > b.0) return #greater;
+      if (a.2 < b.2) return #less;
+      if (a.2 > b.2) return #greater;
+      if (a.1 != b.1) return #less;
+      if (a.3 != b.3) return #less;
+      #equal
+  };
     public func sortTransitionsInPlace(transitions : [var Transition]) {
       Array.sortInPlace<Transition>(
         transitions,
