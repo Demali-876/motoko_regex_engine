@@ -102,6 +102,14 @@ module {
             };
         }
     };
+    public func split(text: Text, maxSpilt:?Nat) : Result.Result<[Text], RegexError> {
+      switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+          matcher.split(compiledNFA, text, maxSpilt, flags)
+        };
+      }
+    };
     public func enableDebug(b:Bool){
       matcher.debugMode(b);
     }

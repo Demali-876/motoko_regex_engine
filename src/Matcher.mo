@@ -340,5 +340,52 @@ module {
         }
       }
     };
+    public func split(nfa : NFA, text : Text, maxSplit : ?Nat, flags : ?Flags) : Result.Result<[Text], MatchError> {
+      let splitLimit = switch (maxSplit) {
+        case (null) 0;
+        case (?val) val
+      };
+
+      if (text.size() == 0) {
+        return #err(#EmptyExpression("Empty expression"))
+      };
+
+      switch (findAll(nfa, text, flags)) {
+        case (#err(e)) #err(e);
+        case (#ok(delimiterMatches)) {
+          let results = Buffer.Buffer<Text>(delimiterMatches.size());
+          var lastIndex = 0;
+          var splitCount = 0;
+
+          label splitting for (delimMatch in delimiterMatches.vals()) {
+            if (splitLimit > 0 and splitCount >= splitLimit) {
+              break splitting
+            };
+            if (delimMatch.position.0 == delimMatch.position.1 and delimMatch.position.0 == 0) {
+              continue splitting
+            };
+            if (lastIndex < delimMatch.position.0) {
+              results.add(substring(text, lastIndex, delimMatch.position.0))
+            };
+            switch (delimMatch.capturedGroups) {
+              case (?groups) {
+                if (groups.size() > 0) {
+                  results.add(delimMatch.value)
+                }
+              };
+              case (null) {}
+            };
+
+            lastIndex := delimMatch.position.1;
+            splitCount += 1
+          };
+          if (lastIndex < text.size()) {
+            results.add(substring(text, lastIndex, text.size()))
+          };
+
+          #ok(Buffer.toArray(results))
+        }
+      }
+    };
   }
 }
