@@ -110,6 +110,14 @@ module {
         };
       }
     };
+     public func replace(text: Text, replacement: Text, maxReplacements:?Nat) : Result.Result<Text, RegexError> {
+      switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+          matcher.replace(compiledNFA, text, replacement, maxReplacements, flags)
+        };
+      }
+    };
     public func enableDebug(b:Bool){
       matcher.debugMode(b);
     }
