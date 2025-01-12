@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.26.1...v2.0.0) (2025-01-12)
+
+
+* Merge pull request [#8](https://github.com/Demali-876/motoko_regex_engine/issues/8) from Demali-876/breaking-change/transitions_removal ([d0a485b](https://github.com/Demali-876/motoko_regex_engine/commit/d0a485b5ccf0a80d333cac8a208ee1cba78cca93))
+
+
+### BREAKING CHANGES
+
+* removal of transitions from compiled regex type
+
 ## [1.26.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.26.0...v1.26.1) (2025-01-12)
 
 # [1.26.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.25.0...v1.26.0) (2025-01-12)
