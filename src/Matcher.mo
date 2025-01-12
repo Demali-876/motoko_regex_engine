@@ -441,5 +441,56 @@ module {
         }
       }
     };
+    public func sub(nfa : NFA, text : Text, replacement : Text, maxReplace : ?Nat, flags : ?Flags) : Result.Result<Text, MatchError> {
+      if (text.size() == 0) {
+        return #err(#EmptyExpression("Empty expression"))
+      };
+
+      switch (findAll(nfa, text, flags)) {
+        case (#err(e)) #err(e);
+        case (#ok(matches)) {
+          let result = Buffer.Buffer<Text>(text.size());
+          var lastIndex = 0;
+          var replaceCount = 0;
+
+          let replaceLimit = switch (maxReplace) {
+            case (null) 0;
+            case (?val) val
+          };
+
+          label replacing for (match in matches.vals()) {
+            if (replaceLimit > 0 and replaceCount >= replaceLimit) {
+              break replacing
+            };
+
+            if (lastIndex < match.position.0) {
+              result.add(substring(text, lastIndex, match.position.0))
+            };
+
+            let processedReplacement = switch (match.capturedGroups) {
+              case (?groups) {
+                var repText = replacement;
+                for ((text, index) in groups.vals()) {
+                  let groupRef = "\\" # Nat.toText(index);
+                  repText := Text.replace(repText, #text groupRef, text)
+                };
+                repText
+              };
+              case (null) replacement
+            };
+
+            result.add(processedReplacement);
+            lastIndex := match.position.1;
+            replaceCount += 1
+          };
+
+          if (lastIndex < text.size()) {
+            result.add(substring(text, lastIndex, text.size()))
+          };
+
+          #ok(Text.join("", result.vals()))
+        }
+      }
+    };
   }
 }
