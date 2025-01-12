@@ -118,6 +118,14 @@ module {
         };
       }
     };
+    public func sub(text: Text, replacement: Text, maxSubstitutions:?Nat) : Result.Result<Text, RegexError>{
+      switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+          matcher.sub(compiledNFA, text, replacement, maxSubstitutions, flags)
+        };
+      }
+    };
     public func enableDebug(b:Bool){
       matcher.debugMode(b);
     }
