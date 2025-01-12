@@ -3,7 +3,7 @@ import Parser "../Parser";
 import Compiler "../Compiler";
 import Result "mo:base/Result";
 import Types "../Types";
-import Regex "../lib"
+import Regex "../lib";
 
 actor {
   type Pattern = Text;
@@ -52,9 +52,10 @@ actor {
       }
     }
   };
-  public query func testMatch(aregextext : Pattern, pattern : Text) : async Result.Result<Types.Match, Types.RegexError> {
+  public query func testMatch(aregextext : Pattern, t : Text) : async Result.Result<Types.Match, Types.RegexError> {
     let regex = Regex.Regex(aregextext, null);
-    switch (regex.match(pattern)) {
+    regex.enableDebug(true);
+    switch (regex.match(t)) {
       case (#ok(result)) {
         #ok(result)
       };
@@ -63,9 +64,9 @@ actor {
       }
     }
   };
-  public query func testSearch(aregextext: Pattern, pattern: Text) : async Result.Result<Types.Match, Types.RegexError> {
+  public query func testSearch(aregextext: Pattern, t: Text) : async Result.Result<Types.Match, Types.RegexError> {
     let regex = Regex.Regex(aregextext, null);
-    switch (regex.search(pattern)) {
+    switch (regex.search(t)) {
         case (#ok(result)) {
             #ok(result);
         };
@@ -74,9 +75,9 @@ actor {
         };
     };
     };
-    public query func testFindAll(aregextext: Pattern, pattern: Text) : async Result.Result<[Types.Match], Types.RegexError> {
+    public query func testFindAll(aregextext: Pattern, t: Text) : async Result.Result<[Types.Match], Types.RegexError> {
     let regex = Regex.Regex(aregextext, null);
-    switch (regex.findAll(pattern)) {
+    switch (regex.findAll(t)) {
         case (#ok(matches)) {
             #ok(matches);
         };
@@ -84,5 +85,27 @@ actor {
             #err(e);
         };
         };
-    }
+    };
+    public query func testSplit(aregextext: Pattern, t: Text, maxSplit:?Nat): async Result.Result<[Text], Types.RegexError>{
+    let regex = Regex.Regex(aregextext, null);
+    switch (regex.split(t, maxSplit)) {
+        case (#ok(matches)) {
+            #ok(matches);
+        };
+        case (#err(e)) {
+            #err(e);
+        };
+        };
+    };
+    public query func testReplace(aregextext: Pattern, t: Text, replacement: Text, maxReplacement:?Nat): async Result.Result<Text, Types.RegexError> {
+    let regex = Regex.Regex(aregextext, null);
+    switch (regex.replace(t, replacement, maxReplacement)) {
+        case (#ok(result)) {
+            #ok(result);
+        };
+        case (#err(e)) {
+            #err(e);
+        };
+        };
+    };
 }
