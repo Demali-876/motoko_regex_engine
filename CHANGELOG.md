@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.0.0...v2.1.0) (2025-01-12)
+
+
+### Features
+
+* added inspection functions ([c8baf33](https://github.com/Demali-876/motoko_regex_engine/commit/c8baf33c4f6da513a7379a74dad30b61062064ce))
+
 # [2.0.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.26.1...v2.0.0) (2025-01-12)
 
 
