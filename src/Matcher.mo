@@ -34,7 +34,13 @@ module {
     public func debugMode(bool : Bool) {
       mode := bool
     };
-
+    public func inspect(x :State, nfa:NFA): Result.Result<[Types.Transition], MatchError> {
+      if (containsState(nfa.states, x)) {
+        return #ok(nfa.transitionTable[x])
+      } else {
+        return #err(#InvalidTransition("State " # Nat.toText(x) # " is not in the NFA"))
+      }
+    };
     private func createMatch(text : Text, startIndex : Nat, index : Nat, captures : Buffer.Buffer<Capture>) : Result.Result<Match, MatchError> {
       var finalCaptures = Buffer.Buffer<(Text, Nat)>(0);
       for (cap in captures.vals()) {
@@ -333,6 +339,6 @@ module {
           return #err(e)
         }
       }
-    }
+    };
   }
 }
