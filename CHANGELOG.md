@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.3.0...v2.4.0) (2025-01-12)
+
+
+### Features
+
+* sub function ([dfe7c63](https://github.com/Demali-876/motoko_regex_engine/commit/dfe7c6314ac2bd2230a984e35ca5fd18fff388fb))
+
 # [2.3.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.2.0...v2.3.0) (2025-01-12)
 
 
