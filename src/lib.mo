@@ -6,6 +6,7 @@ import Compiler "Compiler";
 import Matcher "Matcher";
 import Iter "mo:base/Iter";
 import Debug "mo:base/Debug";
+import Formatter "Formatter";
 
 module {
   public type Pattern = Text;
@@ -81,6 +82,25 @@ module {
           matcher.findIter(compiledNFA, text, flags)
         };
       }
+    };
+    public func inspectRegex(): Result.Result<Text, RegexError> {
+      switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) #ok(Formatter.formatNFA(compiledNFA));
+      }
+    };
+    public func inspectState(state: Types.State): Result.Result<Text, RegexError> {
+    switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+            switch(matcher.inspect(state, compiledNFA)) {
+                case (#err(e)) #err(e);
+                case (#ok(transitions)) {
+                    #ok(Formatter.formatStateTransitions(state, transitions))
+                    };
+                };
+            };
+        }
     };
     public func enableDebug(b:Bool){
       matcher.debugMode(b);
