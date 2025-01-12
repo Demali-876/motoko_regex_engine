@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.25.0...v1.26.0) (2025-01-12)
+
+
+### Features
+
+* add transition equal ([99b584a](https://github.com/Demali-876/motoko_regex_engine/commit/99b584a8ba8d6d211d31a15402846c8249215626))
+
 # [1.25.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.24.1...v1.25.0) (2025-01-12)
 
 
