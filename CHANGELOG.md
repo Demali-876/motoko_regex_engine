@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/Demali-876/motoko_regex_engine/compare/v1.24.1...v1.25.0) (2025-01-12)
+
+
+### Features
+
+* add NFA formatter for better debug output ([5c4984b](https://github.com/Demali-876/motoko_regex_engine/commit/5c4984b7866fef2ebd9a24cba2f1ef923b903401))
+
 ## [1.24.1](https://github.com/Demali-876/motoko_regex_engine/compare/v1.24.0...v1.24.1) (2025-01-03)
 
 
