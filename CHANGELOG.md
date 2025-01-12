@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.1.0...v2.2.0) (2025-01-12)
+
+
+### Features
+
+* split function ([3a16404](https://github.com/Demali-876/motoko_regex_engine/commit/3a1640474f72e355be0010e200d456d724a36c9a))
+
 # [2.1.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.0.0...v2.1.0) (2025-01-12)
 
 
