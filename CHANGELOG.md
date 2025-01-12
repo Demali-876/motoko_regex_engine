@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.2.0...v2.3.0) (2025-01-12)
+
+
+### Features
+
+* replace function ([aceda0a](https://github.com/Demali-876/motoko_regex_engine/commit/aceda0a3971d10fb6a76208a3c3f1877bef525a9))
+
 # [2.2.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.1.0...v2.2.0) (2025-01-12)
 
 
