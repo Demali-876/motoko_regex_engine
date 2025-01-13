@@ -73,7 +73,8 @@ module {
               startIndex = null;
               endIndex = null;
               text = null
-            })
+            });
+            log("Initialized capture group " # debug_show(group.captureIndex));
           };
           case _ {}
         }
@@ -93,7 +94,8 @@ module {
                     endIndex = cap.endIndex;
                     text = cap.text
                   }
-                )
+                );
+                log("Starting capture group " # debug_show(group.captureIndex) # " at index " # debug_show(index));
               }
             };
             case _ {}
@@ -118,9 +120,12 @@ module {
                         endIndex = ?index;
                         text = ?capturedText
                       }
-                    )
+                    );
+                    log("Ending capture group " # debug_show(group.captureIndex) # " at index " # debug_show(index) # " with text: " # capturedText);
                   };
-                  case null {}
+                  case null {
+                    log("Warning: Attempted to end group " # debug_show(group.captureIndex) # " without start index");
+                  }
                 }
               }
             };
@@ -132,6 +137,7 @@ module {
       log("Starting match with text: " # text);
 
       label matching while (index < text.size()) {
+        log("Starting new character iteration at index " # debug_show(index) # " of " # debug_show(text.size()));
         let char = charAt(index, text);
         let possibleTransitions = nfa.transitionTable[currentState];
         var matched = false;
@@ -141,8 +147,12 @@ module {
 
         var isAcceptState = false;
         if (containsState(nfa.acceptStates, currentState)) {
-          isAcceptState := true
+            log("Current state " # debug_show(currentState) # " is an accept state");
+            isAcceptState := true;
+        } else {
+            log("Current state " # debug_show(currentState) # " is not an accept state");
         };
+
         log("At index " # debug_show (index) # " with char '" # Text.fromChar(char) # "' in state " # debug_show (currentState));
 
         label charTransitions for (t in possibleTransitions.vals()) {
@@ -157,12 +167,16 @@ module {
                   log("Found exact char match - transitioning to state " # debug_show (t.2));
 
                   if (not isGreedy and isAcceptState) {
+                    log("Lazy match at accept state - returning early");
                     return createMatch(text, 0, index, captures)
                   };
 
                   if (not isGreedy) {
+                    log("Lazy match - breaking character transitions");
                     break charTransitions
-                  }
+                  } 
+                }else {
+                  log("Character '" # Text.fromChar(char) # "' did not match expected '" # Text.fromChar(c) # "'");
                 }
               };
               case _ {}
@@ -171,6 +185,7 @@ module {
         };
 
         if (not matched) {
+          log("No exact character matches found, checking range matches");
           label rangeTransitions for (t in possibleTransitions.vals()) {
             if (t.0 == currentState) {
               switch (t.1) {
@@ -183,12 +198,16 @@ module {
                     log("Found range match - transitioning to state " # debug_show (t.2));
 
                     if (not isGreedy and isAcceptState) {
+                      log("Lazy range match at accept state - returning early");
                       return createMatch(text, 0, index, captures)
                     };
 
                     if (not isGreedy) {
+                      log("Lazy range match - breaking range transitions");
                       break rangeTransitions
                     }
+                  }else {
+                    log("Character '" # Text.fromChar(char) # "' not in range '" # Text.fromChar(start) # "'-'" # Text.fromChar(end) # "'");
                   }
                 };
                 case _ {}
@@ -201,10 +220,11 @@ module {
           currentState := nextState;
           index += 1;
           handleGroupEnds(currentState);
-          log("Advanced to state " # debug_show (currentState));
+          log("Match succeeded at index " # debug_show(index) # " with char '" # Text.fromChar(char) # "' - moving to state " # debug_show(nextState));
           if (isAcceptState and index < text.size()) {
             let nextChar = charAt(index, text);
             var canContinue = false;
+            log("Checking if can continue past accept state with next char '" # Text.fromChar(nextChar) # "'");
             for (t in nfa.transitionTable[currentState].vals()) {
               switch (t.1) {
                 case (#Char(c)) if (compareChars(nextChar, c, flags)) canContinue := true;
@@ -212,18 +232,22 @@ module {
               }
             };
             if (not canContinue) {
+              log("No valid transitions for next character - returning match");
               return createMatch(text, 0, index, captures)
-            }
+            };
+            log("Found valid continuation - proceeding with match");
           }
         } else {
+          log("Match failed at index " # debug_show(index) # " - no valid transitions found for char '" # Text.fromChar(char) # "' from state " # debug_show(currentState));
           break matching
         }
       };
-
+      log("Reached end of matching at index " # debug_show(index) # " in state " # debug_show(currentState) # " - checking if in accept state");
       if (containsState(nfa.acceptStates, currentState)) {
+        log("Match succeeded - in accept state at end of input");
         return createMatch(text, 0, index, captures)
       };
-
+      log("No match found - stopped at index " # debug_show(index) # " in state " # debug_show(currentState));
       #ok({
         string = text;
         value = "";

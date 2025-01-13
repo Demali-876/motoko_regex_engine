@@ -108,4 +108,15 @@ actor {
         };
         };
     };
+    public func inspectNfa (pattern: Pattern): async Result.Result<Text, Types.RegexError> {
+    let regex = Regex.Regex(pattern, null);
+    switch (regex.inspectRegex()) {
+        case (#ok(result)) {
+            #ok(result);
+        };
+        case (#err(e)) {
+            #err(e);
+            }
+    }
+    }
 }
