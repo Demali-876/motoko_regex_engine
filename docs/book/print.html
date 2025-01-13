@@ -758,7 +758,398 @@ switch (result) {
 <li>Non-overlapping matches are guaranteed</li>
 <li>The iteration order follows the text from left to right</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-5"><a class="header" href="#overview-5">Overview</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="replace"><a class="header" href="#replace"><strong>replace()</strong></a></h1>
+<p>The <code>replace()</code> function substitutes matches in the input string with a specified replacement string. This function allows specifying a maximum number of replacements (<code>maxReplacements</code>).</p>
+<hr />
+<h2 id="signature-4"><a class="header" href="#signature-4"><strong>Signature</strong></a></h2>
+<pre><code class="language-motoko">public func replace(text: Text, replacement: Text, maxReplacements: ?Nat): Result.Result&lt;Text, RegexError&gt;
+</code></pre>
+<hr />
+<h3 id="parameters-4"><a class="header" href="#parameters-4"><strong>Parameters</strong></a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td><code>Text</code></td><td>The input string to perform replacements on.</td></tr>
+<tr><td><code>replacement</code></td><td><code>Text</code></td><td>The string to replace matches with.</td></tr>
+<tr><td><code>maxReplacements</code></td><td><code>?Nat</code></td><td>Optional limit on the number of replacements. If <code>null</code>, replaces all.</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h3 id="return-value-4"><a class="header" href="#return-value-4"><strong>Return Value</strong></a></h3>
+<p><code>Result.Result&lt;Text, RegexError&gt;</code>:</p>
+<ul>
+<li><strong>On Success</strong> (<code>Text</code>):
+<ul>
+<li>The updated string after performing replacements.</li>
+</ul>
+</li>
+<li><strong>On Failure</strong> (<code>RegexError</code>):
+<ul>
+<li>Indicates why the operation failed (e.g., invalid regex or replacement).</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="behavior-2"><a class="header" href="#behavior-2"><strong>Behavior</strong></a></h3>
+<ol>
+<li>
+<p><strong>Input Validation</strong>:</p>
+<ul>
+<li>Checks if the regex has been compiled.</li>
+<li>Returns <code>#NotCompiled</code> error if unavailable.</li>
+</ul>
+</li>
+<li>
+<p><strong>Replacement Process</strong>:</p>
+<ul>
+<li>Matches the regex pattern in the input string.</li>
+<li>Replaces each match with the specified string.</li>
+<li>Respects the <code>maxReplacements</code> limit if provided.</li>
+</ul>
+</li>
+<li>
+<p><strong>Result Construction</strong>:</p>
+<ul>
+<li>Returns the updated string on success.</li>
+<li>Returns <code>RegexError</code> for invalid inputs or uncompiled regex.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h3 id="example-usage-2"><a class="header" href="#example-usage-2"><strong>Example Usage</strong></a></h3>
+<h4 id="1-replace-all-matches"><a class="header" href="#1-replace-all-matches"><strong>1. Replace All Matches</strong></a></h4>
+<pre><code class="language-motoko">let replaceRegex = Regex.Regex("Hello");
+let result = replaceRegex.replace("Hello world, Hello universe", "Hi", null);
+
+switch (result) {
+  case (#ok(updatedText)) {
+    Debug.print("Updated text: " # updatedText);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Updated text: Hi world, Hi universe
+</code></pre>
+<hr />
+<h4 id="2-replace-with-limit"><a class="header" href="#2-replace-with-limit"><strong>2. Replace with Limit</strong></a></h4>
+<pre><code class="language-motoko">let replaceRegex = Regex.Regex("Hello");
+let result = replaceRegex.replace("Hello world, Hello universe", "Hi", ?1);
+
+switch (result) {
+  case (#ok(updatedText)) {
+    Debug.print("Updated text: " # updatedText);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Updated text: Hi world, Hello universe
+</code></pre>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sub"><a class="header" href="#sub"><strong>sub()</strong></a></h1>
+<p>The <code>sub()</code> function substitutes matches in the input string with a specified replacement string. Unlike <code>replace</code>, it allows the use of regex patterns in the replacement string.</p>
+<hr />
+<h2 id="signature-5"><a class="header" href="#signature-5"><strong>Signature</strong></a></h2>
+<pre><code class="language-motoko">public func sub(text: Text, replacement: Text, maxReplacements: ?Nat): Result.Result&lt;Text, RegexError&gt;
+</code></pre>
+<hr />
+<h3 id="parameters-5"><a class="header" href="#parameters-5"><strong>Parameters</strong></a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td><code>Text</code></td><td>The input string to perform substitutions on.</td></tr>
+<tr><td><code>replacement</code></td><td><code>Text</code></td><td>The string (can include regex) to replace matches with.</td></tr>
+<tr><td><code>maxSubstitutions</code></td><td><code>?Nat</code></td><td>Optional limit on the number of substitutions. If <code>null</code>, substitutes all.</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h3 id="return-value-5"><a class="header" href="#return-value-5"><strong>Return Value</strong></a></h3>
+<p><code>Result.Result&lt;Text, RegexError&gt;</code>:</p>
+<ul>
+<li><strong>On Success</strong> (<code>Text</code>):
+<ul>
+<li>The updated string after performing substitutions.</li>
+</ul>
+</li>
+<li><strong>On Failure</strong> (<code>RegexError</code>):
+<ul>
+<li>Indicates why the operation failed (e.g., invalid regex or replacement).</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="behavior-3"><a class="header" href="#behavior-3"><strong>Behavior</strong></a></h3>
+<ol>
+<li>
+<p><strong>Input Validation</strong>:</p>
+<ul>
+<li>Checks if the regex has been compiled.</li>
+<li>Returns <code>#NotCompiled</code> error if unavailable.</li>
+</ul>
+</li>
+<li>
+<p><strong>Substitution Process</strong>:</p>
+<ul>
+<li>Matches the regex pattern in the input string.</li>
+<li>Substitutes each match with the specified replacement string.</li>
+<li>Respects the <code>maxReplacements</code> limit if provided.</li>
+</ul>
+</li>
+<li>
+<p><strong>Result Construction</strong>:</p>
+<ul>
+<li>Returns the updated string on success.</li>
+<li>Returns <code>RegexError</code> for invalid inputs or uncompiled regex.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h3 id="implementation"><a class="header" href="#implementation"><strong>Implementation</strong></a></h3>
+<pre><code class="language-motoko">public func sub(text: Text, replacement: Text, maxReplacements: ?Nat): Result.Result&lt;Text, RegexError&gt; {
+    switch (nfa) {
+        case (null) #err(#NotCompiled);
+        case (?compiledNFA) {
+            matcher.sub(compiledNFA, text, replacement, maxReplacements)
+        };
+    }
+};
+</code></pre>
+<hr />
+<h3 id="example-usage-3"><a class="header" href="#example-usage-3"><strong>Example Usage</strong></a></h3>
+<h4 id="1-substituting-all-matches"><a class="header" href="#1-substituting-all-matches"><strong>1. Substituting All Matches</strong></a></h4>
+<pre><code class="language-motoko">let subRegex = Regex.Regex("\d+");
+let result = subRegex.sub("I have 10 bananas and 20 apples", "many", null);
+
+switch (result) {
+  case (#ok(updatedText)) {
+    Debug.print("Updated text: " # updatedText);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Updated text: I have many bananas and many apples
+</code></pre>
+<hr />
+<h4 id="2-substituting-with-limit"><a class="header" href="#2-substituting-with-limit"><strong>2. Substituting with Limit</strong></a></h4>
+<pre><code class="language-motoko">let subRegex = Regex.Regex("\\d+");
+let result = subRegex.sub("I have 10 bananas and 20 apples", "many", ?1);
+
+switch (result) {
+  case (#ok(updatedText)) {
+    Debug.print("Updated text: " # updatedText);
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Updated text: I have many bananas and 20 apples
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="split"><a class="header" href="#split"><strong>split()</strong></a></h1>
+<p>The <code>split()</code> function divides a string into substrings based on matches of the regex pattern, with an optional limit on the number of splits (<code>maxSplit</code>).</p>
+<hr />
+<h2 id="signature-6"><a class="header" href="#signature-6"><strong>Signature</strong></a></h2>
+<pre><code class="language-motoko">public func split(text: Text, maxSplit: ?Nat): Result.Result&lt;[Text], RegexError&gt;
+</code></pre>
+<hr />
+<h3 id="parameters-6"><a class="header" href="#parameters-6"><strong>Parameters</strong></a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>text</code></td><td><code>Text</code></td><td>The input string to be split based on the regex pattern.</td></tr>
+<tr><td><code>maxSplit</code></td><td><code>?Nat</code></td><td>Optional limit on the number of splits. If <code>null</code>, splits all.</td></tr>
+</tbody></table>
+</div>
+<hr />
+<h3 id="return-value-6"><a class="header" href="#return-value-6"><strong>Return Value</strong></a></h3>
+<p><code>Result.Result&lt;[Text], RegexError&gt;</code>:</p>
+<ul>
+<li><strong>On Success</strong> (<code>[Text]</code>):
+<ul>
+<li>A vector of substrings resulting from splitting the input string.</li>
+</ul>
+</li>
+<li><strong>On Failure</strong> (<code>RegexError</code>):
+<ul>
+<li>Indicates why the operation failed (e.g., invalid regex).</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="behavior-4"><a class="header" href="#behavior-4"><strong>Behavior</strong></a></h3>
+<ol>
+<li>
+<p><strong>Input Validation</strong>:</p>
+<ul>
+<li>Checks if the regex has been compiled.</li>
+<li>Returns <code>#NotCompiled</code> error if unavailable.</li>
+</ul>
+</li>
+<li>
+<p><strong>Splitting Process</strong>:</p>
+<ul>
+<li>Matches the regex pattern in the input string.</li>
+<li>Divides the string at each match, respecting the <code>maxSplit</code> limit if provided.</li>
+<li>Handles edge cases (e.g., no matches or empty input).</li>
+</ul>
+</li>
+<li>
+<p><strong>Result Construction</strong>:</p>
+<ul>
+<li>Returns a vector of substrings on success.</li>
+<li>Returns <code>RegexError</code> for invalid inputs or uncompiled regex.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h3 id="example-usage-4"><a class="header" href="#example-usage-4"><strong>Example Usage</strong></a></h3>
+<h4 id="1-splitting-without-limit"><a class="header" href="#1-splitting-without-limit"><strong>1. Splitting Without Limit</strong></a></h4>
+<pre><code class="language-motoko">let splitRegex = Regex.Regex(",");
+let result = splitRegex.split("one,two,three", null);
+
+switch (result) {
+  case (#ok(parts)) {
+    Debug.print("Split result: " # debug_show(parts));
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Split result: ["one", "two", "three"]
+</code></pre>
+<hr />
+<h4 id="2-splitting-with-limit"><a class="header" href="#2-splitting-with-limit"><strong>2. Splitting With Limit</strong></a></h4>
+<pre><code class="language-motoko">let splitRegex = Regex.Regex(",");
+let result = splitRegex.split("one,two,three", ?1);
+
+switch (result) {
+  case (#ok(parts)) {
+    Debug.print("Split result: " # debug_show(parts));
+  };
+  case (#err(error)) {
+    Debug.print("Error: " # debug_show(error));
+  };
+}
+</code></pre>
+<p><strong>Output</strong>:</p>
+<pre><code>Split result: ["one", "two,three"]
+</code></pre>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="inspectregex"><a class="header" href="#inspectregex">inspectRegex()</a></h1>
+<p>Returns a detailed text representation of the NFA structure for a compiled regular expression pattern.</p>
+<h2 id="overview-5"><a class="header" href="#overview-5">Overview</a></h2>
+<p>The <code>inspectRegex()</code> function allows you to examine the internal NFA (Non-deterministic Finite Automaton) structure of a compiled regular expression. This is particularly useful for debugging complex patterns and understanding how the regex engine processes matches.</p>
+<h2 id="return-value-7"><a class="header" href="#return-value-7">Return Value</a></h2>
+<ul>
+<li>Type: <code>Result.Result&lt;Text, RegexError&gt;</code></li>
+<li>Success: Returns <code>#ok(Text)</code> with formatted NFA representation</li>
+<li>Error: Returns <code>#err(#NotCompiled)</code> if regex is not compiled</li>
+</ul>
+<h2 id="example-social-security-number-pattern"><a class="header" href="#example-social-security-number-pattern">Example: Social Security Number Pattern</a></h2>
+<pre><code class="language-motoko">// Create regex for basic SSN pattern: ^\d{3}-\d{2}-\d{4}$
+let regex = Regex.new("^\\d{3}-\\d{2}-\\d{4}$");
+
+// Inspect the NFA structure
+switch(regex.inspectRegex()) {
+    case (#ok(nfa)) Debug.print(nfa);
+    case (#err(e)) Debug.print("Error: Not compiled");
+};
+</code></pre>
+<h3 id="example-output"><a class="header" href="#example-output">Example Output</a></h3>
+<pre><code>=== NFA State Machine ===
+Initial State → 0
+Accept States → [11]
+
+=== Transitions ===
+From State 0:
+  #Range('0', '9') → 1 (#Greedy)
+
+From State 1:
+  #Range('0', '9') → 2 (#Greedy)
+
+From State 2:
+  #Range('0', '9') → 3 (#Greedy)
+
+From State 3:
+  #Char('-') → 4
+
+From State 4:
+  #Range('0', '9') → 5 (#Greedy)
+
+From State 5:
+  #Range('0', '9') → 6 (#Greedy)
+
+From State 6:
+  #Char('-') → 7
+
+From State 7:
+  #Range('0', '9') → 8 (#Greedy)
+
+From State 8:
+  #Range('0', '9') → 9 (#Greedy)
+
+From State 9:
+  #Range('0', '9') → 10 (#Greedy)
+
+From State 10:
+  #Range('0', '9') → 11 (#Greedy)
+
+=== Assertions ===
+Anchor: {aType = #StartOfString; position = 0}
+Anchor: {aType = #EndOfString; position = 11}
+</code></pre>
+<h2 id="pattern-breakdown"><a class="header" href="#pattern-breakdown">Pattern Breakdown</a></h2>
+<p>The NFA structure represents the SSN pattern <code>^\d{3}-\d{2}-\d{4}$</code> as follows:</p>
+<ol>
+<li>Start anchor at position 0</li>
+<li>States 0-2: First three digits (<code>\d{3}</code>) with greedy quantifiers</li>
+<li>State 3: Literal hyphen (<code>-</code>)</li>
+<li>States 4-5: Next two digits (<code>\d{2}</code>) with greedy quantifiers</li>
+<li>State 6: Second hyphen (<code>-</code>)</li>
+<li>States 7-10: Final four digits (<code>\d{4}</code>) with greedy quantifiers</li>
+<li>State 11: Accept state</li>
+<li>End anchor at position 11</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="inspectstatestate-typesstate"><a class="header" href="#inspectstatestate-typesstate">inspectState(state: Types.State)</a></h1>
+<p>Examines and returns the transitions for a specific state in the NFA (Non-deterministic Finite Automaton) structure.</p>
+<h2 id="overview-6"><a class="header" href="#overview-6">Overview</a></h2>
+<p>The <code>inspectState()</code> function allows you to inspect the transitions from any particular state in the compiled regex pattern. This is useful for debugging specific parts of pattern matching behavior.</p>
+<h2 id="parameters-7"><a class="header" href="#parameters-7">Parameters</a></h2>
+<ul>
+<li><code>state</code>: Nat - The state number to inspect</li>
+</ul>
+<h2 id="return-value-8"><a class="header" href="#return-value-8">Return Value</a></h2>
+<ul>
+<li>Type: <code>Result.Result&lt;Text, RegexError&gt;</code></li>
+<li>Success: Returns <code>#ok(Text)</code> with formatted transitions from the specified state</li>
+<li>Error: Returns <code>#err(#NotCompiled)</code> if regex is not compiled</li>
+</ul>
+<h2 id="example-social-security-number-pattern-state"><a class="header" href="#example-social-security-number-pattern-state">Example: Social Security Number Pattern State</a></h2>
+<p>Using the same SSN pattern (<code>^\d{3}-\d{2}-\d{4}$</code>), let's inspect state 4, which handles the first digit after the first hyphen:</p>
+<pre><code class="language-motoko">let regex = Regex.Regex("^\d{3}-\d{2}-\d{4}$");
+
+switch(regex.inspectState(3)) {
+    case (#ok(transitions)) Debug.print(transitions);
+    case (#err(e)) Debug.print("Error: Not compiled");
+};
+</code></pre>
+<h3 id="example-output-1"><a class="header" href="#example-output-1">Example Output</a></h3>
+<pre><code>From State 3:
+  #Char('-') → 4
+</code></pre>
+<p>This shows the transitions available for state 3 in the NFA. There is only one transition available for state 3 which is the dash character.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="enabledebugb-bool"><a class="header" href="#enabledebugb-bool">enableDebug(b: Bool)</a></h1>
+<p>Toggles debug logging for the regex matcher. When enabled, it provides detailed logging of the pattern matching process.</p>
+<h2 id="parameters-8"><a class="header" href="#parameters-8">Parameters</a></h2>
+<ul>
+<li><code>b</code>: Bool - Set to true to enable debug logging, false to disable it</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-7"><a class="header" href="#overview-7">Overview</a></h1>
 <p>The <code>Match</code> record represents the result of a pattern matching operation on text, typically used in regular expression or string matching operations. It contains detailed information about what was matched, where it was found, and any captured groups within the match.</p>
 <h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
 <pre><code class="language-motoko">public type Match = {
@@ -1034,6 +1425,22 @@ Results:
 
         </div>
 
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
 
 
 
