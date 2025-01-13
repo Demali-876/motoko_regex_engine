@@ -1,5 +1,0 @@
-module {
-    public class Optimizer() {
-        
-    };
-};
