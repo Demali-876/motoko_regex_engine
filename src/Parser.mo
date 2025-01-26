@@ -3,9 +3,7 @@ import Types "Types";
 import Result "mo:base/Result";
 import Array "mo:base/Array";
 import Char "mo:base/Char";
-
 module {
-
   public class Parser(initialTokens: [Types.Token]) {
     var tokens = initialTokens;
     var cursor : Nat = 0;
@@ -22,7 +20,6 @@ module {
 
       let result = parseAlternation();
       
-      // Ensure we consumed all tokens
       if (cursor < tokens.size()) {
         return #err(#UnexpectedToken(tokens[cursor].tokenType));
       };
@@ -32,8 +29,7 @@ module {
 
     private func parseAlternation(): Result.Result<Types.AST, Types.RegexError> {
       var nodes: [Types.AST] = [];
-      
-      // Parse first expression
+
       switch (parseConcatenation()) {
         case (#ok(node)) {
           nodes := Array.append(nodes, [node]);
@@ -41,14 +37,12 @@ module {
         case (#err(error)) { return #err(error) };
       };
 
-      // Parse alternatives
       label aloop while (cursor < tokens.size()) {
         switch (peekToken()) {
           case (?token) {
             if (token.tokenType == #Alternation) {
-              ignore advanceCursor(); // Consume '|'
-              
-              // Check for empty alternative
+              ignore advanceCursor();
+
               switch (peekToken()) {
                 case (?nextToken) {
                   if (nextToken.tokenType == #Alternation) {
@@ -108,7 +102,7 @@ module {
               case (#Group(groupData)) {
                 if (groupData.modifier == ?#NegativeLookbehind or 
                     groupData.modifier == ?#PositiveLookbehind) {
-                  break cloop; // Lookbehind must be at start of pattern
+                  break cloop;
                 };
                 switch (parseSingleExpression()) {
                   case (#ok(node)) {
@@ -172,10 +166,8 @@ module {
         };
         case (#Group(groupData)) {
           ignore advanceCursor();
-          // Parse the group first
           switch(parseGroup(groupData)) {
             case (#ok(groupAst)) {
-              // Then check for quantifiers
               parseQuantifierIfPresent(groupAst)
             };
             case (#err(e)) { #err(e) };
@@ -228,7 +220,6 @@ module {
         subTokens: [Types.Token]; 
         quantifier: ?Types.QuantifierType
     }): Result.Result<Types.AST, Types.RegexError> {
-        // Validate group data
         switch (groupData.quantifier) {
             case (?quantifier) {
                 if (quantifier.min > maxQuantifier) {
@@ -246,30 +237,25 @@ module {
             case (null) {};
         };
 
-        // Save parser state
         let savedTokens = tokens;
         let savedCursor = cursor;
         let savedCaptureIndex = captureGroupIndex;
 
-        // Parse group contents
         tokens := groupData.subTokens;
         cursor := 0;
 
         let result = parseAlternation();
 
-        // Restore parser state
         tokens := savedTokens;
         cursor := savedCursor;
 
         switch (result) {
             case (#ok(groupNode)) {
-                // Determine if this group is capturing
                 let isCapturing = switch (groupData.modifier) {
                     case (?#NonCapturing) { false };
                     case (_) { true };
                 };
 
-                // Assign capture index if capturing
                 let currentCaptureIndex = if (isCapturing) {
                     let index = captureGroupIndex;
                     captureGroupIndex += 1;
@@ -297,7 +283,6 @@ module {
                 }
             };
             case (#err(error)) { 
-                // Reset capture index if error occurs
                 captureGroupIndex := savedCaptureIndex;
                 #err(error) 
             };

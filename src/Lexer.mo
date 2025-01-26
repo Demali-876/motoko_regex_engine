@@ -354,31 +354,63 @@ module {
     };
 
     private func tokenizeEscapedChar() : Result.Result<Types.Token, Types.RegexError> {
-      if (not cursor.hasNext()) {
-        return #err(#UnexpectedEndOfInput)
-      };
-      let escapedChar = cursor.current();
-      if (not Extensions.isValidEscapeSequence(escapedChar, false)) {
-        return #err(#GenericError("Invalid escape sequence '\\" # Text.fromChar(escapedChar) # "' at position " # Nat.toText(cursor.getPos() - 1)))
-      };
+        if (not cursor.hasNext()) {
+            return #err(#UnexpectedEndOfInput);
+        };
 
-      let token = switch escapedChar {
-        case 'w' {createToken(#Metacharacter(#WordChar), "\\w")};
-        case 'W' {createToken(#Metacharacter(#NonWordChar), "\\W")};
-        case 'd' {createToken(#Metacharacter(#Digit), "\\d")};
-        case 'D' {createToken(#Metacharacter(#NonDigit), "\\D")};
-        case 's' {createToken(#Metacharacter(#Whitespace), "\\s")};
-        case 'S' {createToken(#Metacharacter(#NonWhitespace), "\\S")};
-        case 'b' {createToken(#Anchor(#WordBoundary), "\\b")};
-        case 'B' {createToken(#Anchor(#NonWordBoundary), "\\B")};
-        case 'A' {createToken(#Anchor(#StartOfStringOnly), "\\A")};
-        case 'z' {createToken(#Anchor(#EndOfStringOnly), "\\z")};
-        case 'G' {createToken(#Anchor(#PreviousMatchEnd), "\\G")};
-        case c {createToken(#Character(c), "\\" # Text.fromChar(c))}
-      };
-      cursor.inc();
-      token
+        let escapedChar = cursor.current();
+
+        if (not Extensions.isValidEscapeSequence(escapedChar, false)) {
+            return #err(#GenericError("Invalid escape sequence '\\" # Text.fromChar(escapedChar) # "' at position " # Nat.toText(cursor.getPos() - 1)));
+        };
+
+        if (escapedChar == 'p' or escapedChar == 'P') {
+            cursor.inc();
+
+            if (not cursor.hasNext() or cursor.current() != '{') {
+                return #err(#GenericError("Expected '{' after '\\p' or '\\P' for Unicode property"));
+            };
+
+            cursor.inc();
+            var propertyText = "";
+
+            while (cursor.hasNext() and cursor.current() != '}') {
+                propertyText := propertyText # Text.fromChar(cursor.current());
+                cursor.inc();
+            };
+
+            if (not cursor.hasNext() or cursor.current() != '}') {
+                return #err(#GenericError("Unterminated Unicode property '\\p{" # propertyText # "'"));
+            };
+
+            cursor.inc();
+
+            if (Extensions.isValidUnicodeProperty(propertyText)) {
+                return createToken(#Metacharacter(#UnicodeProperty(escapedChar == 'P', propertyText)), "\\" # (if (escapedChar == 'P') "P" else "p") # "{" # propertyText # "}");
+            } else {
+                return #err(#GenericError("Invalid Unicode property '\\p{" # propertyText # "}'"));
+            };
+        };
+
+        let token = switch escapedChar {
+            case 'w' { createToken(#Metacharacter(#WordChar), "\\w") };
+            case 'W' { createToken(#Metacharacter(#NonWordChar), "\\W") };
+            case 'd' { createToken(#Metacharacter(#Digit), "\\d") };
+            case 'D' { createToken(#Metacharacter(#NonDigit), "\\D") };
+            case 's' { createToken(#Metacharacter(#Whitespace), "\\s") };
+            case 'S' { createToken(#Metacharacter(#NonWhitespace), "\\S") };
+            case 'b' { createToken(#Anchor(#WordBoundary), "\\b") };
+            case 'B' { createToken(#Anchor(#NonWordBoundary), "\\B") };
+            case 'A' { createToken(#Anchor(#StartOfStringOnly), "\\A") };
+            case 'z' { createToken(#Anchor(#EndOfStringOnly), "\\z") };
+            case 'G' { createToken(#Anchor(#PreviousMatchEnd), "\\G") };
+            case c { createToken(#Character(c), "\\" # Text.fromChar(c)) };
+        };
+
+        cursor.inc();
+        token;
     };
+
     private func tokenizeEscapedClass(char : Char) : Result.Result<Types.CharacterClass, Types.RegexError> {
       if (not Extensions.isValidEscapeSequence(char, true)) {
         return #err(#GenericError("Invalid escape sequence '\\" # Text.fromChar(char) # "' in character class"))
