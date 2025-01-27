@@ -32,7 +32,7 @@ module {
     Text.fromIter(slicedChars)
   };
 
-  public func compareChars(char1: Char, char2: Char, flags: ?Types.Flags) : Bool {
+  public func compareChars(char1 : Char, char2 : Char, flags : ?Types.Flags) : Bool {
     switch (flags) {
       case (?f) {
         if (not f.caseSensitive) {
@@ -41,11 +41,11 @@ module {
           char1 == char2
         }
       };
-      case null { char1 == char2 };
-    };
+      case null {char1 == char2}
+    }
   };
 
-  public func isInRange(char: Char, start: Char, end: Char, flags: ?Types.Flags) : Bool {
+  public func isInRange(char : Char, start : Char, end : Char, flags : ?Types.Flags) : Bool {
     switch (flags) {
       case (?f) {
         if (not f.caseSensitive) {
@@ -57,10 +57,10 @@ module {
           char >= start and char <= end
         }
       };
-      case null { char >= start and char <= end };
-    };
+      case null {char >= start and char <= end}
+    }
   };
-  
+
   public func substring(text : Text, start : Nat, end : Nat) : Text {
     let chars = Text.toArray(text);
     assert (start <= end);
@@ -101,7 +101,7 @@ module {
       case _ {false}
     }
   };
-  
+
   public func isValidEscapeSequence(char : Char, inClass : Bool) : Bool {
     if (inClass) {
       switch (char) {
@@ -118,11 +118,23 @@ module {
           'b' or 'B' or 'A' or 'z' or 'G' or
           '(' or ')' or '[' or ']' or '{' or '}' or
           '*' or '+' or '?' or '.' or '^' or '$' or
-          '|' or '\\'
+          '|' or '\\' or 'p' or 'P'
         ) {true};
         case _ {false}
       }
     }
+  };
+  public func isValidUnicodeProperty(property : Text) : Bool {
+    let supportedProperties = [
+      "L",
+      "Ll",
+      "Lu",
+      "N",
+      "P",
+      "Zs",
+      "Emoji"
+    ];
+    Array.find<Text>(supportedProperties, func(p : Text) {p == property}) != null
   };
   public func parseQuantifierRange(rangeStr : Text) : (Nat, ?Nat) {
     let chars = Text.toIter(rangeStr);
@@ -203,26 +215,97 @@ module {
   public func metacharToRanges(metaType : Types.MetacharacterType) : [(Char, Char)] {
     switch metaType {
       case (#Digit) {[('0', '9')]};
+
       case (#NonDigit) {
-        // Match everything except digits (0-9)
-        [(Char.fromNat32(0), '/'), (':', Char.fromNat32(255))]
+        [(Char.fromNat32(0), '/'), (':', Char.fromNat32(0x10FFFF))]
       };
+
       case (#Whitespace) {
-        // Match whitespace (space, tab, newline, carriage return)
-        [(' ', ' '), ('\t', '\t'), ('\n', '\n'), ('\r', '\r')]
+        [
+          (' ', ' '),
+          ('\t', '\t'),
+          ('\n', '\n'),
+          ('\r', '\r'),
+          (Char.fromNat32(0x00A0), Char.fromNat32(0x00A0)),
+          (Char.fromNat32(0x1680), Char.fromNat32(0x1680)),
+          (Char.fromNat32(0x2000), Char.fromNat32(0x200A)),
+          (Char.fromNat32(0x202F), Char.fromNat32(0x202F)),
+          (Char.fromNat32(0x205F), Char.fromNat32(0x205F)),
+          (Char.fromNat32(0x3000), Char.fromNat32(0x3000))
+        ]
       };
+
       case (#NonWhitespace) {
-        // Match everything except whitespace characters
-        [(Char.fromNat32(0), Char.fromNat32(8)), (Char.fromNat32(11), Char.fromNat32(12)), (Char.fromNat32(14), Char.fromNat32(255))]
+        [
+          (Char.fromNat32(0), Char.fromNat32(0x09)),
+          (Char.fromNat32(0x0B), Char.fromNat32(0x0C)),
+          (Char.fromNat32(0x0E), Char.fromNat32(0x167F)),
+          (Char.fromNat32(0x1681), Char.fromNat32(0x1FFF)),
+          (Char.fromNat32(0x200B), Char.fromNat32(0x202E)),
+          (Char.fromNat32(0x2030), Char.fromNat32(0x205E)),
+          (Char.fromNat32(0x2060), Char.fromNat32(0x2FFF)),
+          (Char.fromNat32(0x3010), Char.fromNat32(0x10FFFF))
+        ]
       };
-      case (#WordChar) {[('a', 'z'), ('A', 'Z'), ('0', '9'), ('_', '_')]};
-      case (#NonWordChar) {[('!', '/'), (':', '@'), ('[', '`'), ('{', '~')]};
-      case (#Dot) {
-        // Match any character except newline
-        [(Char.fromNat32(0), Char.fromNat32(255))]
+
+      case (#WordChar) {
+        [
+          (Char.fromNat32(0x0030), Char.fromNat32(0x0039)),
+          (Char.fromNat32(0x0041), Char.fromNat32(0x005A)),
+          (Char.fromNat32(0x0061), Char.fromNat32(0x007A)),
+          ('_', '_'),
+          (Char.fromNat32(0x00C0), Char.fromNat32(0x00D6)),
+          (Char.fromNat32(0x00D8), Char.fromNat32(0x00F6)),
+          (Char.fromNat32(0x00F8), Char.fromNat32(0x02AF)),
+          (Char.fromNat32(0x0370), Char.fromNat32(0x1FFF)),
+          (Char.fromNat32(0x2C00), Char.fromNat32(0xD7FF)),
+          (Char.fromNat32(0xF900), Char.fromNat32(0xFFFD))
+        ]
+      };
+
+      case (#NonWordChar) {
+        [
+          (Char.fromNat32(0), Char.fromNat32(0x002F)),
+          (Char.fromNat32(0x003A), Char.fromNat32(0x0040)),
+          (Char.fromNat32(0x005B), Char.fromNat32(0x0060)),
+          (Char.fromNat32(0x007B), Char.fromNat32(0x00BF)),
+          (Char.fromNat32(0x02B0), Char.fromNat32(0x036F)),
+          (Char.fromNat32(0x2000), Char.fromNat32(0x2BFF)),
+          (Char.fromNat32(0x3000), Char.fromNat32(0x10FFFF))
+        ]
+      };
+
+      case (#Dot) {[(Char.fromNat32(0), Char.fromNat32(0x10FFFF))]};
+      case (#UnicodeProperty(negated, property)) {
+        let ranges = switch property {
+          case "L" {
+            [('A', 'Z'), ('a', 'z'), (Char.fromNat32(0x00C0), Char.fromNat32(0x02AF))]
+          };
+          case "Ll" {
+            [('a', 'z'), (Char.fromNat32(0x00DF), Char.fromNat32(0x00F6))]
+          };
+          case "Lu" {
+            [('A', 'Z'), (Char.fromNat32(0x00C0), Char.fromNat32(0x00D6))]
+          };
+          case "N" {
+            [('0', '9'), (Char.fromNat32(0x0660), Char.fromNat32(0x0669))]
+          };
+          case "P" {[('!', '/'), (':', '@'), ('[', '`'), ('{', '~')]};
+          case "Zs" {
+            [(' ', ' '), (Char.fromNat32(0x00A0), Char.fromNat32(0x00A0))]
+          };
+          case "Emoji" {[(Char.fromNat32(0x1F600), Char.fromNat32(0x1F64F))]};
+          case _ {[]}
+        };
+        if (negated) {
+          return computeClassRanges([#Metacharacter(metaType)], true)
+        } else {
+          return ranges
+        }
       }
     }
   };
+
   public func computeClassRanges(nodes : [AST], isNegated : Bool) : [(Char, Char)] {
     let ranges = Buffer.Buffer<(Char, Char)>(16);
     for (node in nodes.vals()) {
@@ -249,20 +332,17 @@ module {
       }
     );
 
-    // Merge overlapping ranges
     let mergedRanges = Buffer.Buffer<(Char, Char)>(sortedRanges.size());
     if (sortedRanges.size() > 0) {
       var current = sortedRanges[0];
       for (i in Iter.range(1, sortedRanges.size() - 1)) {
         let next = sortedRanges[i];
         if (Char.toNat32(current.1) + 1 >= Char.toNat32(next.0)) {
-          // Ranges overlap or are adjacent, merge them
           current := (
             current.0,
             if (Char.toNat32(current.1) > Char.toNat32(next.1)) current.1 else next.1
           )
         } else {
-          // No overlap, add current range and start new one
           mergedRanges.add(current);
           current := next
         }
@@ -273,7 +353,6 @@ module {
     if (not isNegated) {
       Buffer.toArray(mergedRanges)
     } else {
-      // Compute complement ranges
       let complementRanges = Buffer.Buffer<(Char, Char)>(mergedRanges.size() + 1);
       let mergedArray = Buffer.toArray(mergedRanges);
 
@@ -286,7 +365,6 @@ module {
           ))
         };
 
-        // Add ranges between merged ranges
         for (i in Iter.range(0, mergedArray.size() - 2)) {
           let currentEnd = Char.toNat32(mergedArray[i].1);
           let nextStart = Char.toNat32(mergedArray[i + 1].0);
@@ -298,7 +376,6 @@ module {
           }
         };
 
-        // Add range from last range end to max Unicode if needed
         let lastEnd = Char.toNat32(mergedArray[mergedArray.size() - 1].1);
         if (lastEnd < 255) {
           complementRanges.add((
@@ -348,55 +425,49 @@ module {
       case _ {[ast]}
     }
   };
-    public func compareTransitions(a : Transition, b : Transition) : Order.Order {
+  public func compareTransitions(a : Transition, b : Transition) : Order.Order {
     switch (a.1, b.1) {
-        case (#Char(_), #Range(_)) #less;
-        case (#Range(_), #Char(_)) #greater;
-        case (#Char(charA), #Char(charB)) {
-            if (charA < charB) #less
-            else if (charA > charB) #greater
-            else {
-                let modeA = switch (a.3) {case (?m) m; case null #Greedy};
-                let modeB = switch (b.3) {case (?m) m; case null #Greedy};
-                switch (modeA, modeB) {
-                    case (#Lazy, #Greedy) #less;
-                    case (#Greedy, #Lazy) #greater;
-                    case _ #equal
-                }
-            }
-        };
-        case (#Range((startA, endA)), #Range((startB, endB))) {
-            if (startA < startB) #less
-            else if (startA > startB) #greater
-            else if (endA < endB) #less
-            else if (endA > endB) #greater
-            else {
-                let modeA = switch (a.3) {case (?m) m; case null #Greedy};
-                let modeB = switch (b.3) {case (?m) m; case null #Greedy};
-                switch (modeA, modeB) {
-                    case (#Lazy, #Greedy) #less;
-                    case (#Greedy, #Lazy) #greater;
-                    case _ #equal
-                }
-            }
-        };
-    }
-};
-  public func transitionEquals(a : Transition, b : Transition) : Order.Order {
-      if (a.0 < b.0) return #less;
-      if (a.0 > b.0) return #greater;
-      if (a.2 < b.2) return #less;
-      if (a.2 > b.2) return #greater;
-      if (a.1 != b.1) return #less;
-      if (a.3 != b.3) return #less;
-      #equal
-  };
-    public func sortTransitionsInPlace(transitions : [var Transition]) {
-      Array.sortInPlace<Transition>(
-        transitions,
-        func(a : Transition, b : Transition) {
-          compareTransitions(a, b)
+      case (#Char(_), #Range(_)) #less;
+      case (#Range(_), #Char(_)) #greater;
+      case (#Char(charA), #Char(charB)) {
+        if (charA < charB) #less else if (charA > charB) #greater else {
+          let modeA = switch (a.3) {case (?m) m; case null #Greedy};
+          let modeB = switch (b.3) {case (?m) m; case null #Greedy};
+          switch (modeA, modeB) {
+            case (#Lazy, #Greedy) #less;
+            case (#Greedy, #Lazy) #greater;
+            case _ #equal
+          }
         }
-      )
-    };
+      };
+      case (#Range((startA, endA)), #Range((startB, endB))) {
+        if (startA < startB) #less else if (startA > startB) #greater else if (endA < endB) #less else if (endA > endB) #greater else {
+          let modeA = switch (a.3) {case (?m) m; case null #Greedy};
+          let modeB = switch (b.3) {case (?m) m; case null #Greedy};
+          switch (modeA, modeB) {
+            case (#Lazy, #Greedy) #less;
+            case (#Greedy, #Lazy) #greater;
+            case _ #equal
+          }
+        }
+      }
+    }
+  };
+  public func transitionEquals(a : Transition, b : Transition) : Order.Order {
+    if (a.0 < b.0) return #less;
+    if (a.0 > b.0) return #greater;
+    if (a.2 < b.2) return #less;
+    if (a.2 > b.2) return #greater;
+    if (a.1 != b.1) return #less;
+    if (a.3 != b.3) return #less;
+    #equal
+  };
+  public func sortTransitionsInPlace(transitions : [var Transition]) {
+    Array.sortInPlace<Transition>(
+      transitions,
+      func(a : Transition, b : Transition) {
+        compareTransitions(a, b)
+      }
+    )
+  }
 }

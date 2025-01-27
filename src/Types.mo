@@ -33,6 +33,7 @@ module{
       #NonDigit;
       #Whitespace;
       #NonWhitespace;
+      #UnicodeProperty : (Bool, Text) ;
     };
 
     public type CharacterClass = {

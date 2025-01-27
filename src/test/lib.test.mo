@@ -1,12 +1,20 @@
 import Lexer "../Lexer";
 import Parser "../Parser";
 import Compiler "../Compiler";
-import Result "mo:base/Result";
 import Types "../Types";
 import Regex "../lib";
+import Result "mo:base/Result";
+import IC "mo:base/ExperimentalInternetComputer";
 
 actor {
   type Pattern = Text;
+  public func measurePatternInstructions(pattern : Text, input : Text) : async Nat64 {
+    let count = IC.countInstructions(func() {
+      let regex = Regex.Regex(pattern, null);
+      ignore regex.match(input);
+    });
+    return count;
+  };
   public query func testLexer(t : Text) : async Result.Result<[Types.Token], Types.RegexError> {
     let lexer = Lexer.Lexer(t);
     lexer.tokenize()
