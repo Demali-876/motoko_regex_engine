@@ -1,3 +1,12 @@
+# [2.6.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.5.0...v2.6.0) (2025-01-27)
+
+
+### Features
+
+* Backreference AST support ([aa6392e](https://github.com/Demali-876/motoko_regex_engine/commit/aa6392e1595a750583af8f4c65b9d4afaa506e9e))
+* backreference types ([3a27623](https://github.com/Demali-876/motoko_regex_engine/commit/3a276238511831fba2d554e4ed4b316ac81bf969))
+* **lexer:** named group detection ([059f911](https://github.com/Demali-876/motoko_regex_engine/commit/059f911c4ead51a4bea21cac31e71bb549c720b8))
+
 # [2.5.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.4.1...v2.5.0) (2025-01-27)
 
 
