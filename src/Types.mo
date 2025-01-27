@@ -23,7 +23,9 @@ module{
           modifier: ?GroupModifierType;
           subTokens: [Token];
           quantifier: ?QuantifierType;
+          name: ?Text;
       };
+      #Backreference
     };
     public type MetacharacterType = {
       #Dot;
@@ -86,6 +88,7 @@ module{
           subExpr: AST;
           modifier: ?GroupModifierType;
           captureIndex: ?Nat;
+          name: ?Text;
       };
       #Metacharacter : MetacharacterType;
       #CharacterClass : {
@@ -93,6 +96,7 @@ module{
           classes: [AST]; 
       };
       #Anchor : AnchorType;
+      #Backreference: Text;
     };
 
     //Error Types
@@ -132,6 +136,12 @@ module{
       isPositive: Bool;
       isAhead: Bool;
       position: State;
+      length: ?Nat;
+    };
+    #Backreference: {
+      captureIndex: Nat;
+      position: State;
+      length: Nat;
     };
     #Group: {
       captureIndex: Nat;
@@ -141,6 +151,13 @@ module{
   };
 };
 
+public type GroupsMetadata = {
+  name: Text;
+  captureIndex: Nat;
+  startState: State;
+  endStates: [State];
+  length: Nat;
+};
   public type CompiledRegex = {
     states : [State];
     transitionTable : [[Transition]];

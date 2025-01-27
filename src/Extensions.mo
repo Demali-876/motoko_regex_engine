@@ -8,6 +8,7 @@ import Iter "mo:base/Iter";
 import Char "mo:base/Char";
 import Debug "mo:base/Debug";
 import Order "mo:base/Order";
+import Result "mo:base/Result";
 
 module {
   type State = Types.State;
@@ -118,7 +119,7 @@ module {
           'b' or 'B' or 'A' or 'z' or 'G' or
           '(' or ')' or '[' or ']' or '{' or '}' or
           '*' or '+' or '?' or '.' or '^' or '$' or
-          '|' or '\\' or 'p' or 'P'
+          '|' or '\\' or 'p' or 'P' or 'k'
         ) {true};
         case _ {false}
       }
@@ -412,7 +413,63 @@ module {
     };
     false
   };
+  public func computeExpressionLength(ast: Types.ASTNode): Result.Result<Nat, Types.RegexError> {
+    switch (ast) {
+      case (#Character(_)) { 
+        #ok(1)
+      };
+      
+      case (#Range(_, _)) { 
+        #ok(1)
+      };
 
+      case (#Metacharacter(_)) { 
+        #ok(1)  
+      };
+
+      case (#CharacterClass(_)) { 
+        #ok(1)
+      };
+
+      case (#Concatenation(subExprs)) {
+        var totalLength = 0;
+        for (expr in subExprs.vals()) {
+          switch (computeExpressionLength(expr)) {
+            case (#err(e)) return #err(e);
+            case (#ok(len)) { totalLength += len; };
+          };
+        };
+        #ok(totalLength)
+      };
+
+      case (#Alternation(_)) {
+        #err(#GenericError("Alternations in lookbehind must be fixed-length"));
+      };
+
+      case (#Quantifier({ quantifier = { min; max; mode = _ }; })) {
+        switch (min, max) {
+          case (n, ?m) { 
+            if (n == m) { #ok(n) }
+            else { #err(#GenericError("Variable-length quantifiers are not allowed in lookbehind")) };
+          };
+          case (_, null) { 
+            #err(#GenericError("Unbounded quantifiers are not allowed in lookbehind"));
+          };
+        };
+      };
+
+      case (#Group({ subExpr; modifier = _  })) {
+        switch (computeExpressionLength(subExpr)) {
+          case (#err(e)) return #err(e);
+          case (#ok(len)) { #ok(len) };
+        };
+      };
+
+      case (_) {
+        #err(#GenericError("Unsupported construct in lookbehind"));
+      };
+    };
+  };
   public func flattenAST(ast : Types.ASTNode) : [Types.ASTNode] {
     switch (ast) {
       case (#Concatenation(exprs)) {

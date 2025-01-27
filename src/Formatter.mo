@@ -58,6 +58,11 @@ module {
                 output #= "  Start: " # debug_show(g.startState) # "\n";
                 output #= "  End: " # debug_show(g.endStates) # "\n";
             };
+            case(#Backreference(b)) {
+                output #= "Backreference " # debug_show(b.captureIndex) # ":\n";
+                output #= "  Position: " # debug_show(b.position) # "\n";
+                output #= "  Length: " # debug_show(b.length) # "\n";
+            };
         };
         output
     };

@@ -2,6 +2,8 @@ import Types "Types";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Array "mo:base/Array";
+import TrieMap "mo:base/TrieMap";
+import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Extensions "Extensions";
 import Result "mo:base/Result";
@@ -13,41 +15,42 @@ module {
 
   public class Compiler() {
     let assertionBuffer = Buffer.Buffer<Types.Assertion>(8);
+    let namedGroupsMetadata = TrieMap.TrieMap<Text, Types.GroupsMetadata>(Text.equal, Text.hash);
     public func compile(ast : Types.ASTNode) : Result.Result<Types.CompiledRegex, Types.RegexError> {
       let startState : State = 0;
       switch (buildNFA(ast, startState)) {
         case (#err(error)) {
           #err(error)
         };
-       case (#ok(flatTransitions, acceptStates)) {
-        if (acceptStates.size() == 0) {
-          #err(#EmptyExpression("No accept states generated"))
-        } else {
-          let maxState = Extensions.getMaxState(flatTransitions, acceptStates, startState);
+        case (#ok(flatTransitions, acceptStates)) {
+          if (acceptStates.size() == 0) {
+            #err(#EmptyExpression("No accept states generated"))
+          } else {
+            let maxState = Extensions.getMaxState(flatTransitions, acceptStates, startState);
 
-          let transitionsByState = Array.tabulate<[Transition]>(
-            maxState + 1,
-            func(state) {
-              let stateTransitions = Buffer.Buffer<Transition>(4);
-              for (t in flatTransitions.vals()) {
-                if (t.0 == state) {
-                  stateTransitions.add(t);
-                }
-              };
-              stateTransitions.sort(Extensions.compareTransitions);
-              Buffer.toArray(stateTransitions)
-            }
-          );
+            let transitionsByState = Array.tabulate<[Transition]>(
+              maxState + 1,
+              func(state) {
+                let stateTransitions = Buffer.Buffer<Transition>(4);
+                for (t in flatTransitions.vals()) {
+                  if (t.0 == state) {
+                    stateTransitions.add(t)
+                  }
+                };
+                stateTransitions.sort(Extensions.compareTransitions);
+                Buffer.toArray(stateTransitions)
+              }
+            );
 
-          #ok({
-            states = Array.tabulate<State>(maxState + 1, func(i) = i);
-            transitionTable = transitionsByState;
-            startState = startState;
-            acceptStates = acceptStates;
-            assertions = Buffer.toArray(assertionBuffer)
-          })
+            #ok({
+              states = Array.tabulate<State>(maxState + 1, func(i) = i);
+              transitionTable = transitionsByState;
+              startState = startState;
+              acceptStates = acceptStates;
+              assertions = Buffer.toArray(assertionBuffer)
+            })
+          }
         }
-      }
       }
     };
 
@@ -90,7 +93,7 @@ module {
           #ok(Buffer.toArray(transitionBuffer), [acceptState])
         };
 
-        case (#Quantifier({subExpr; quantifier = {min; max; mode;}})) {
+        case (#Quantifier({subExpr; quantifier = {min; max; mode}})) {
           switch (min, max) {
             case (0, null) {
               switch (buildNFA(subExpr, startState)) {
@@ -101,7 +104,7 @@ module {
                   for (t in subTransitions.vals()) {
                     transitionBuffer.add((startState, t.1, startState, ?mode))
                   };
-                  #ok(Buffer.toArray(transitionBuffer), [startState, startState+1])
+                  #ok(Buffer.toArray(transitionBuffer), [startState, startState +1])
                 }
               }
             };
@@ -147,7 +150,7 @@ module {
                     case (#err(e)) return #err(e);
                     case (#ok(subTransitions, _)) {
                       for (t in subTransitions.vals()) {
-                        transitionBuffer.add((currentState, t.1, currentState + 1,?mode))
+                        transitionBuffer.add((currentState, t.1, currentState + 1, ?mode))
                       };
                       currentState += 1
                     }
@@ -165,7 +168,7 @@ module {
                     case (#err(e)) return #err(e);
                     case (#ok(subTransitions, _)) {
                       for (t in subTransitions.vals()) {
-                        transitionBuffer.add((currentState, t.1, currentState + 1,?mode))
+                        transitionBuffer.add((currentState, t.1, currentState + 1, ?mode))
                       };
                       currentState += 1
                     }
@@ -280,156 +283,137 @@ module {
         };
 
         case (#Concatenation(exprs)) {
-  switch (exprs.size()) {
-    case 0 return #err(#GenericError("Empty concatenation"));
-    case 1 return buildNFA(exprs[0], startState);
-    case _ {
-      var currentState = startState;
-      let transitionBuffer = Buffer.Buffer<Transition>(exprs.size() * 4);
-      let acceptStates = Buffer.Buffer<State>(4);
+          switch (exprs.size()) {
+            case 0 return #err(#GenericError("Empty concatenation"));
+            case 1 return buildNFA(exprs[0], startState);
+            case _ {
+              var currentState = startState;
+              let transitionBuffer = Buffer.Buffer<Transition>(exprs.size() * 4);
+              let acceptStates = Buffer.Buffer<State>(4);
 
-      switch(buildNFA(exprs[0], currentState)) {
-        case (#err(e)) return #err(e);
-        case (#ok(transitions, accepts)) {
-          for (t in transitions.vals()) {
-            transitionBuffer.add(t);
-          };
-          for (accept in accepts.vals()) {
-            acceptStates.add(accept);
-          };
-          currentState := accepts[0];
-        };
-      };
-
-      for (i in Iter.range(1, exprs.size() - 1)) {
-        let thisAccepts = Buffer.Buffer<State>(4);
-        for (prevAccept in acceptStates.vals()) {
-          switch(buildNFA(exprs[i], prevAccept)) {
-            case (#err(e)) return #err(e);
-            case (#ok(transitions, accepts)) {
-              for (t in transitions.vals()) {
-                transitionBuffer.add(t);
+              switch (buildNFA(exprs[0], currentState)) {
+                case (#err(e)) return #err(e);
+                case (#ok(transitions, accepts)) {
+                  for (t in transitions.vals()) {
+                    transitionBuffer.add(t)
+                  };
+                  for (accept in accepts.vals()) {
+                    acceptStates.add(accept)
+                  };
+                  currentState := accepts[0]
+                }
               };
-              for (accept in accepts.vals()) {
-                thisAccepts.add(accept);
+
+              for (i in Iter.range(1, exprs.size() - 1)) {
+                let thisAccepts = Buffer.Buffer<State>(4);
+                for (prevAccept in acceptStates.vals()) {
+                  switch (buildNFA(exprs[i], prevAccept)) {
+                    case (#err(e)) return #err(e);
+                    case (#ok(transitions, accepts)) {
+                      for (t in transitions.vals()) {
+                        transitionBuffer.add(t)
+                      };
+                      for (accept in accepts.vals()) {
+                        thisAccepts.add(accept)
+                      }
+                    }
+                  }
+                };
+
+                acceptStates.clear();
+                for (accept in thisAccepts.vals()) {
+                  acceptStates.add(accept)
+                }
               };
-            };
-          };
+              Buffer.removeDuplicates<Nat>(acceptStates, Nat.compare);
+              Buffer.removeDuplicates<Transition>(transitionBuffer, Extensions.transitionEquals);
+              #ok(Buffer.toArray(transitionBuffer), Buffer.toArray<Nat>(acceptStates))
+            }
+          }
         };
+        case (#Group({name; subExpr; modifier; captureIndex})) {
+          let groupStartState = startState;
 
-        acceptStates.clear();
-        for (accept in thisAccepts.vals()) {
-          acceptStates.add(accept);
-        };
-      };
-      Buffer.removeDuplicates<Nat>(acceptStates, Nat.compare);
-      Buffer.removeDuplicates<Transition>(transitionBuffer, Extensions.transitionEquals);
-      #ok(Buffer.toArray(transitionBuffer), Buffer.toArray<Nat>(acceptStates));
-    }
-  }
-};
-
-        case (#Group({subExpr; modifier; captureIndex})) {
           switch (modifier) {
-            case (? #PositiveLookahead) {
-              switch (buildNFA(subExpr, startState)) {
+            case (? #PositiveLookahead or ? #NegativeLookahead) {
+              switch (buildNFA(subExpr, groupStartState)) {
                 case (#err(e)) return #err(e);
-                case (#ok(subTransitions, subAcceptStates)) {
-                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
-                  for (t in subTransitions.vals()) {
-                    transitionBuffer.add(t)
-                  };
+                case (#ok(_, subAcceptStates)) {
                   assertionBuffer.add({
                     assertion = #Lookaround({
-                      startState = startState;
+                      startState = groupStartState;
                       acceptStates = subAcceptStates;
-                      isPositive = true;
+                      isPositive = modifier == ? #PositiveLookahead;
                       isAhead = true;
-                      position = startState
+                      position = groupStartState;
+                      length = null
                     })
                   });
-                  #ok(Buffer.toArray(transitionBuffer), [startState])
+
+                  #ok([], [groupStartState])
                 }
               }
             };
-            case (? #NegativeLookahead) {
-              switch (buildNFA(subExpr, startState)) {
+
+            case (? #PositiveLookbehind or ? #NegativeLookbehind) {
+              switch (Extensions.computeExpressionLength(subExpr)) {
                 case (#err(e)) return #err(e);
-                case (#ok(subTransitions, subAcceptStates)) {
-                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
-                  for (t in subTransitions.vals()) {
-                    transitionBuffer.add(t)
-                  };
-                  assertionBuffer.add({
-                    assertion = #Lookaround({
-                      startState = startState;
-                      acceptStates = subAcceptStates;
-                      isPositive = false;
-                      isAhead = true;
-                      position = startState
-                    })
-                  });
-                  #ok(Buffer.toArray(transitionBuffer), [startState])
-                }
-              }
-            };
-            case (? #PositiveLookbehind) {
-              switch (buildNFA(subExpr, startState)) {
-                case (#err(e)) return #err(e);
-                case (#ok(subTransitions, subAcceptStates)) {
-                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
-                  for (t in subTransitions.vals()) {
-                    transitionBuffer.add(t)
-                  };
-                  assertionBuffer.add({
-                    assertion = #Lookaround({
-                      startState = startState;
-                      acceptStates = subAcceptStates;
-                      isPositive = true;
-                      isAhead = false;
-                      position = startState
-                    })
-                  });
-                  #ok(Buffer.toArray(transitionBuffer), [startState])
-                }
-              }
-            };
-            case (? #NegativeLookbehind) {
-              switch (buildNFA(subExpr, startState)) {
-                case (#err(e)) return #err(e);
-                case (#ok(subTransitions, subAcceptStates)) {
-                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
-                  for (t in subTransitions.vals()) {
-                    transitionBuffer.add(t)
-                  };
-                  assertionBuffer.add({
-                    assertion = #Lookaround({
-                      startState = startState;
-                      acceptStates = subAcceptStates;
-                      isPositive = false;
-                      isAhead = false;
-                      position = startState
-                    })
-                  });
-                  #ok(Buffer.toArray(transitionBuffer), [startState])
+                case (#ok(length)) {
+                  switch (buildNFA(subExpr, groupStartState)) {
+                    case (#err(e)) return #err(e);
+                    case (#ok(_, subAcceptStates)) {
+                      assertionBuffer.add({
+                        assertion = #Lookaround({
+                          startState = groupStartState;
+                          acceptStates = subAcceptStates;
+                          isPositive = modifier == ? #PositiveLookbehind;
+                          isAhead = false;
+                          position = groupStartState;
+                          length = ?length
+                        })
+                      });
+
+                      #ok([], [groupStartState])
+                    }
+                  }
                 }
               }
             };
             case (? #NonCapturing) {
-              buildNFA(subExpr, startState)
+              buildNFA(subExpr, groupStartState)
             };
+
             case (null) {
               let index = switch (captureIndex) {
                 case (?i) i;
                 case null return #err(#GenericError("Capture index is null for capturing group"))
               };
-              let groupStartState = startState;
+
               switch (buildNFA(subExpr, groupStartState)) {
                 case (#err(e)) return #err(e);
                 case (#ok(subTransitions, subAcceptStates)) {
-                  let transitionBuffer = Buffer.Buffer<Transition>(subTransitions.size());
-                  for (t in subTransitions.vals()) {
-                    transitionBuffer.add(t)
+                  switch (Extensions.computeExpressionLength(subExpr)) {
+                    case (#ok(length)) {
+                      switch (name) {
+                        case (?groupName) {
+                          if (namedGroupsMetadata.get(groupName) != null) {
+                            return #err(#GenericError("Duplicate named group '" # groupName # "'"))
+                          };
+                          namedGroupsMetadata.put(
+                            groupName,
+                            {
+                              captureIndex = index;
+                              length = length;
+                              endStates = subAcceptStates;
+                              name = groupName;
+                              startState = groupStartState
+                            }
+                          )
+                        };
+                        case (null) {}
+                      }
+                    };
+                    case (#err(e)) return #err(e)
                   };
                   assertionBuffer.add({
                     assertion = #Group({
@@ -438,9 +422,28 @@ module {
                       endStates = subAcceptStates
                     })
                   });
-                  #ok(Buffer.toArray(transitionBuffer), subAcceptStates)
+
+                  #ok(subTransitions, subAcceptStates)
                 }
               }
+            }
+          }
+        };
+        case (#Backreference(name)) {
+          switch (namedGroupsMetadata.get(name)) {
+            case (?metadata) {
+              assertionBuffer.add({
+                assertion = #Backreference({
+                  captureIndex = metadata.captureIndex;
+                  position = startState;
+                  length = metadata.length
+                })
+              });
+
+              #ok([], [startState])
+            };
+            case null {
+              #err(#GenericError("Backreference '" # name # "' does not match any previously defined group"))
             }
           }
         }
