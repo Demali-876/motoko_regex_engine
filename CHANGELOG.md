@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.4.1...v2.5.0) (2025-01-27)
+
+
+### Features
+
+* unicode support ([2acc1b8](https://github.com/Demali-876/motoko_regex_engine/commit/2acc1b811b1936c5754f9a4ed547217a6f86e93d))
+
 ## [2.4.1](https://github.com/Demali-876/motoko_regex_engine/compare/v2.4.0...v2.4.1) (2025-01-13)
 
 # [2.4.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.3.0...v2.4.0) (2025-01-12)
