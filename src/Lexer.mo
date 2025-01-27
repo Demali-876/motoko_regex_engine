@@ -100,88 +100,88 @@ module {
     };
 
     private func tokenizeQuantifier(min : Nat, max : ?Nat) : Result.Result<Types.Token, Types.RegexError> {
-    let start = cursor.getPos();
-    cursor.inc();
-    
-    let mode = if (cursor.hasNext()) {
-      switch (cursor.current()) {
-        case '?' {
-          cursor.inc();
-          #Lazy;
-        };
-        case ('*' or '+') {
-          return #err(#GenericError("Invalid quantifier modifier at position " # Nat.toText(cursor.getPos())));
-        };
-        case _ { #Greedy; };
-      };
-    } else {
-      #Greedy;
-    };
+      let start = cursor.getPos();
+      cursor.inc();
 
-    createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()));
-  };
+      let mode = if (cursor.hasNext()) {
+        switch (cursor.current()) {
+          case '?' {
+            cursor.inc();
+            #Lazy
+          };
+          case ('*' or '+') {
+            return #err(#GenericError("Invalid quantifier modifier at position " # Nat.toText(cursor.getPos())))
+          };
+          case _ {#Greedy}
+        }
+      } else {
+        #Greedy
+      };
+
+      createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()))
+    };
 
     private func tokenizeQuantifierRange() : Result.Result<Types.Token, Types.RegexError> {
-  let start = cursor.getPos();
-  cursor.inc();
-  if (not cursor.hasNext()) {
-    return #err(#InvalidQuantifierRange("Unclosed quantifier at position " # Nat.toText(start)));
-  };
-  if (cursor.current() == ',') {
-    return #err(#InvalidQuantifierRange("Quantifier cannot start with comma at position " # Nat.toText(cursor.getPos())));
-  };
-  if (cursor.current() == '}') {
-    return #err(#InvalidQuantifierRange("Empty quantifier at position " # Nat.toText(start)));
-  };
-
-  var rangeContent = "";
-  var hasComma = false;
-  var hasNumber = false;
-
-  while (cursor.hasNext() and cursor.current() != '}') {
-    let current = cursor.current();
-    if (current == ',') {
-      if (hasComma) {
-        return #err(#InvalidQuantifierRange("Multiple commas in quantifier range at position " # Nat.toText(cursor.getPos())));
+      let start = cursor.getPos();
+      cursor.inc();
+      if (not cursor.hasNext()) {
+        return #err(#InvalidQuantifierRange("Unclosed quantifier at position " # Nat.toText(start)))
       };
-      hasComma := true;
-    } else if (Char.isDigit(current)) {
-      hasNumber := true;
-    } else {
-      return #err(#InvalidQuantifierRange("Invalid character in quantifier range at position " # Nat.toText(cursor.getPos())));
+      if (cursor.current() == ',') {
+        return #err(#InvalidQuantifierRange("Quantifier cannot start with comma at position " # Nat.toText(cursor.getPos())))
+      };
+      if (cursor.current() == '}') {
+        return #err(#InvalidQuantifierRange("Empty quantifier at position " # Nat.toText(start)))
+      };
+
+      var rangeContent = "";
+      var hasComma = false;
+      var hasNumber = false;
+
+      while (cursor.hasNext() and cursor.current() != '}') {
+        let current = cursor.current();
+        if (current == ',') {
+          if (hasComma) {
+            return #err(#InvalidQuantifierRange("Multiple commas in quantifier range at position " # Nat.toText(cursor.getPos())))
+          };
+          hasComma := true
+        } else if (Char.isDigit(current)) {
+          hasNumber := true
+        } else {
+          return #err(#InvalidQuantifierRange("Invalid character in quantifier range at position " # Nat.toText(cursor.getPos())))
+        };
+        rangeContent := rangeContent # Text.fromChar(current);
+        cursor.inc()
+      };
+
+      if (not hasNumber) {
+        return #err(#InvalidQuantifierRange("Quantifier range must contain at least one number"))
+      };
+
+      if (not cursor.hasNext() or cursor.current() != '}') {
+        return #err(#InvalidQuantifierRange("Missing closing '}' for quantifier range"))
+      };
+
+      cursor.inc();
+      let (min, max) = Extensions.parseQuantifierRange(rangeContent);
+
+      let mode = if (cursor.hasNext()) {
+        switch (cursor.current()) {
+          case '?' {
+            cursor.inc();
+            #Lazy
+          };
+          case ('*' or '+') {
+            return #err(#GenericError("Invalid quantifier modifier at position " # Nat.toText(cursor.getPos())))
+          };
+          case _ {#Greedy}
+        }
+      } else {
+        #Greedy
+      };
+
+      createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()))
     };
-    rangeContent := rangeContent # Text.fromChar(current);
-    cursor.inc();
-  };
-
-  if (not hasNumber) {
-    return #err(#InvalidQuantifierRange("Quantifier range must contain at least one number"));
-  };
-
-  if (not cursor.hasNext() or cursor.current() != '}') {
-    return #err(#InvalidQuantifierRange("Missing closing '}' for quantifier range"));
-  };
-
-  cursor.inc();
-  let (min, max) = Extensions.parseQuantifierRange(rangeContent);
-
-  let mode = if (cursor.hasNext()) {
-    switch (cursor.current()) {
-      case '?' {
-        cursor.inc();
-        #Lazy;
-      };
-      case ('*' or '+') {
-        return #err(#GenericError("Invalid quantifier modifier at position " # Nat.toText(cursor.getPos())));
-      };
-      case _ { #Greedy; };
-    };
-  } else {
-    #Greedy;
-  };
-
-  createToken(#Quantifier({min; max; mode}), Extensions.slice(input, start, ?cursor.getPos()));
-};
     private func tokenizeCharacterClass() : Result.Result<Types.Token, Types.RegexError> {
       let start = cursor.getPos();
       cursor.inc();
@@ -261,18 +261,87 @@ module {
       let start = cursor.getPos();
       cursor.inc();
 
-      let groupModifierResult = parseGroupModifier();
       var groupModifier : ?Types.GroupModifierType = null;
-      switch (groupModifierResult) {
-        case (#err(error)) {return #err(error)};
-        case (#ok(modifier)) {groupModifier := modifier}
+      var groupName : ?Text = null;
+
+      if (cursor.hasNext() and cursor.current() == '?') {
+        cursor.inc();
+
+        if (cursor.hasNext()) {
+          let nextChar = cursor.current();
+
+          if (nextChar == '<') {
+            cursor.inc();
+            if (cursor.hasNext()) {
+              let lookbehindChar = cursor.current();
+              switch (lookbehindChar) {
+                case ('=' or '!') {
+                  cursor.dec();
+                  cursor.dec();
+                  let modifierResult = parseGroupModifier();
+                  switch (modifierResult) {
+                    case (#ok(?modifier)) {groupModifier := ?modifier};
+                    case (#err(error)) {return #err(error)};
+                    case (#ok(null)) {
+                      return #err(#GenericError("Invalid group modifier at position " # Nat.toText(start)))
+                    }
+                  }
+                };
+                case _ {
+                  var nameBuffer = Buffer.Buffer<Char>(10);
+
+                  cursor.dec();
+
+                  while (cursor.hasNext() and cursor.current() != '>') {
+                    let c = cursor.current();
+                    cursor.inc();
+
+                    if (c != '<' and not (('a' <= c and c <= 'z') or ('A' <= c and c <= 'Z'))) {
+                      return #err(#GenericError("Invalid named group character '" # Text.fromChar(c) # "' at position " # Nat.toText(cursor.getPos())))
+                    };
+
+                    if (c != '<') {
+                      nameBuffer.add(c)
+                    }
+                  };
+
+                  if (nameBuffer.size() == 0) {
+                    return #err(#GenericError("Empty group name at position " # Nat.toText(start)))
+                  };
+
+                  if (not cursor.hasNext() or cursor.current() != '>') {
+                    return #err(#GenericError("Unterminated named group at position " # Nat.toText(start)))
+                  };
+                  cursor.inc();
+                  groupName := ?Text.fromIter(nameBuffer.vals())
+                }
+              }
+            } else {
+              return #err(#UnexpectedEndOfInput)
+            }
+          } else {
+            cursor.dec();
+            let modifierResult = parseGroupModifier();
+            switch (modifierResult) {
+              case (#ok(?modifier)) {groupModifier := ?modifier};
+              case (#err(error)) {return #err(error)};
+              case (#ok(null)) {
+                return #err(#GenericError("Invalid group modifier at position " # Nat.toText(start)))
+              }
+            }
+          }
+        } else {
+          return #err(#UnexpectedEndOfInput)
+        }
       };
 
       if (cursor.hasNext() and cursor.current() == ')') {
         return #err(#GenericError("Empty group at position " # Nat.toText(start)))
       };
+
       let subExprResult = tokenizeSubExpression();
       var subTokens : [Types.Token] = [];
+
       switch (subExprResult) {
         case (#err(error)) {return #err(error)};
         case (#ok(tokens)) {
@@ -282,6 +351,7 @@ module {
           subTokens := Buffer.toArray(tokens)
         }
       };
+
       if (not cursor.hasNext() or cursor.current() != ')') {
         return #err(#GenericError("Expected closing parenthesis at position " # Nat.toText(cursor.getPos()) # ", found '" # Text.fromChar(cursor.current()) # "'"))
       };
@@ -291,28 +361,51 @@ module {
         tokenType = #Group({
           modifier = groupModifier;
           subTokens = subTokens;
-          quantifier = null
+          quantifier = null;
+          name = groupName
         });
         value = Extensions.slice(input, start, ?cursor.getPos());
         position = #Span(start, cursor.getPos() - 1)
       };
+
       #ok(groupToken)
     };
-
     private func parseGroupModifier() : Result.Result<?Types.GroupModifierType, Types.RegexError> {
-      if (cursor.hasNext() and cursor.current() == '?') {
+      if (not cursor.hasNext()) {
+        return #ok(null)
+      };
+
+      let startPos = cursor.getPos();
+
+      if (cursor.current() == '?') {
         cursor.inc();
         if (cursor.hasNext()) {
-          switch (cursor.current()) {
-            case ':' {cursor.inc(); return #ok(? #NonCapturing)};
-            case '=' {cursor.inc(); return #ok(? #PositiveLookahead)};
-            case '!' {cursor.inc(); return #ok(? #NegativeLookahead)};
+          let modifier = cursor.current();
+          switch (modifier) {
+            case ':' {
+              cursor.inc();
+              return #ok(? #NonCapturing)
+            };
+            case '=' {
+              cursor.inc();
+              return #ok(? #PositiveLookahead)
+            };
+            case '!' {
+              cursor.inc();
+              return #ok(? #NegativeLookahead)
+            };
             case '<' {
               cursor.inc();
               if (cursor.hasNext()) {
                 switch (cursor.current()) {
-                  case '=' {cursor.inc(); return #ok(? #PositiveLookbehind)};
-                  case '!' {cursor.inc(); return #ok(? #NegativeLookbehind)};
+                  case '=' {
+                    cursor.inc();
+                    return #ok(? #PositiveLookbehind)
+                  };
+                  case '!' {
+                    cursor.inc();
+                    return #ok(? #NegativeLookbehind)
+                  };
                   case _ {
                     return #err(#GenericError("Invalid lookbehind modifier at position " # Nat.toText(cursor.getPos())))
                   }
@@ -322,7 +415,7 @@ module {
               }
             };
             case _ {
-              return #err(#GenericError("Invalid group modifier at position " # Nat.toText(cursor.getPos())))
+              return #err(#GenericError("Invalid group modifier '" # Text.fromChar(modifier) # "' at position " # Nat.toText(startPos)))
             }
           }
         } else {
@@ -354,61 +447,95 @@ module {
     };
 
     private func tokenizeEscapedChar() : Result.Result<Types.Token, Types.RegexError> {
-        if (not cursor.hasNext()) {
-            return #err(#UnexpectedEndOfInput);
-        };
+      if (not cursor.hasNext()) {
+        return #err(#UnexpectedEndOfInput)
+      };
 
-        let escapedChar = cursor.current();
+      let escapedChar = cursor.current();
 
-        if (not Extensions.isValidEscapeSequence(escapedChar, false)) {
-            return #err(#GenericError("Invalid escape sequence '\\" # Text.fromChar(escapedChar) # "' at position " # Nat.toText(cursor.getPos() - 1)));
-        };
+      if (escapedChar == 'k') {
+        cursor.inc();
 
-        if (escapedChar == 'p' or escapedChar == 'P') {
-            cursor.inc();
-
-            if (not cursor.hasNext() or cursor.current() != '{') {
-                return #err(#GenericError("Expected '{' after '\\p' or '\\P' for Unicode property"));
-            };
-
-            cursor.inc();
-            var propertyText = "";
-
-            while (cursor.hasNext() and cursor.current() != '}') {
-                propertyText := propertyText # Text.fromChar(cursor.current());
-                cursor.inc();
-            };
-
-            if (not cursor.hasNext() or cursor.current() != '}') {
-                return #err(#GenericError("Unterminated Unicode property '\\p{" # propertyText # "'"));
-            };
-
-            cursor.inc();
-
-            if (Extensions.isValidUnicodeProperty(propertyText)) {
-                return createToken(#Metacharacter(#UnicodeProperty(escapedChar == 'P', propertyText)), "\\" # (if (escapedChar == 'P') "P" else "p") # "{" # propertyText # "}");
-            } else {
-                return #err(#GenericError("Invalid Unicode property '\\p{" # propertyText # "}'"));
-            };
-        };
-
-        let token = switch escapedChar {
-            case 'w' { createToken(#Metacharacter(#WordChar), "\\w") };
-            case 'W' { createToken(#Metacharacter(#NonWordChar), "\\W") };
-            case 'd' { createToken(#Metacharacter(#Digit), "\\d") };
-            case 'D' { createToken(#Metacharacter(#NonDigit), "\\D") };
-            case 's' { createToken(#Metacharacter(#Whitespace), "\\s") };
-            case 'S' { createToken(#Metacharacter(#NonWhitespace), "\\S") };
-            case 'b' { createToken(#Anchor(#WordBoundary), "\\b") };
-            case 'B' { createToken(#Anchor(#NonWordBoundary), "\\B") };
-            case 'A' { createToken(#Anchor(#StartOfStringOnly), "\\A") };
-            case 'z' { createToken(#Anchor(#EndOfStringOnly), "\\z") };
-            case 'G' { createToken(#Anchor(#PreviousMatchEnd), "\\G") };
-            case c { createToken(#Character(c), "\\" # Text.fromChar(c)) };
+        if (not cursor.hasNext() or cursor.current() != '<') {
+          return #err(#GenericError("Expected '<' after '\\k' for named backreference"))
         };
 
         cursor.inc();
-        token;
+        var nameBuffer = Buffer.Buffer<Char>(10);
+
+        while (cursor.hasNext() and cursor.current() != '>') {
+          let c = cursor.current();
+
+          if (not (('a' <= c and c <= 'z') or ('A' <= c and c <= 'Z'))) {
+            return #err(#GenericError("Invalid backreference name '\\k<" # Text.fromIter(nameBuffer.vals()) # ">' at position " # Nat.toText(cursor.getPos()) # ". Names must be alphabetic."))
+          };
+          nameBuffer.add(c);
+          cursor.inc()
+        };
+        if (nameBuffer.size() == 0) {
+          return #err(#GenericError("Attempted to reference a group but provided no name!"))
+        };
+
+        if (not cursor.hasNext() or cursor.current() != '>') {
+          return #err(#GenericError("Unterminated named backreference '\\k<" # Text.fromIter(nameBuffer.vals()) # ">'"))
+        };
+
+        cursor.inc();
+
+        let name = Text.fromIter(nameBuffer.vals());
+
+        return #ok({
+          tokenType = #Backreference;
+          value = name;
+          position = #Span(cursor.getPos() - Text.size(name), cursor.getPos())
+        })
+      };
+
+      if (escapedChar == 'p' or escapedChar == 'P') {
+        cursor.inc();
+
+        if (not cursor.hasNext() or cursor.current() != '{') {
+          return #err(#GenericError("Expected '{' after '\\p' or '\\P' for Unicode property"))
+        };
+
+        cursor.inc();
+        var propertyText = "";
+
+        while (cursor.hasNext() and cursor.current() != '}') {
+          propertyText := propertyText # Text.fromChar(cursor.current());
+          cursor.inc()
+        };
+
+        if (not cursor.hasNext() or cursor.current() != '}') {
+          return #err(#GenericError("Unterminated Unicode property '\\p{" # propertyText # "'"))
+        };
+
+        cursor.inc();
+
+        if (Extensions.isValidUnicodeProperty(propertyText)) {
+          return createToken(#Metacharacter(#UnicodeProperty(escapedChar == 'P', propertyText)), "\\" # (if (escapedChar == 'P') "P" else "p") # "{" # propertyText # "}")
+        } else {
+          return #err(#GenericError("Invalid Unicode property '\\p{" # propertyText # "}'"))
+        }
+      };
+
+      let token = switch escapedChar {
+        case 'w' {createToken(#Metacharacter(#WordChar), "\\w")};
+        case 'W' {createToken(#Metacharacter(#NonWordChar), "\\W")};
+        case 'd' {createToken(#Metacharacter(#Digit), "\\d")};
+        case 'D' {createToken(#Metacharacter(#NonDigit), "\\D")};
+        case 's' {createToken(#Metacharacter(#Whitespace), "\\s")};
+        case 'S' {createToken(#Metacharacter(#NonWhitespace), "\\S")};
+        case 'b' {createToken(#Anchor(#WordBoundary), "\\b")};
+        case 'B' {createToken(#Anchor(#NonWordBoundary), "\\B")};
+        case 'A' {createToken(#Anchor(#StartOfStringOnly), "\\A")};
+        case 'z' {createToken(#Anchor(#EndOfStringOnly), "\\z")};
+        case 'G' {createToken(#Anchor(#PreviousMatchEnd), "\\G")};
+        case c {createToken(#Character(c), "\\" # Text.fromChar(c))}
+      };
+
+      cursor.inc();
+      token
     };
 
     private func tokenizeEscapedClass(char : Char) : Result.Result<Types.CharacterClass, Types.RegexError> {
@@ -428,4 +555,4 @@ module {
       )
     }
   }
-};
+}
