@@ -34,7 +34,7 @@ module {
     public func debugMode(bool : Bool) {
       mode := bool
     };
-    public func inspect(x :State, nfa:NFA): Result.Result<[Types.Transition], MatchError> {
+    public func inspect(x : State, nfa : NFA) : Result.Result<[Types.Transition], MatchError> {
       if (containsState(nfa.states, x)) {
         return #ok(nfa.transitionTable[x])
       } else {
@@ -74,57 +74,30 @@ module {
               endIndex = null;
               text = null
             });
-            log("Initialized capture group " # debug_show(group.captureIndex));
+            log("Initialized capture group " # debug_show (group.captureIndex))
           };
           case _ {}
         }
       };
 
-      func handleGroupStarts(state : State) {
+      func handleGroupTransitions(state : State, isStart : Bool) {
         for (assertion in nfa.assertions.vals()) {
           switch (assertion.assertion) {
             case (#Group(group)) {
-              if (group.startState == state) {
+              if (isStart and group.startState == state) {
                 let cap = captures.get(group.captureIndex - 1);
-                captures.put(
-                  group.captureIndex - 1,
-                  {
-                    groupIndex = cap.groupIndex;
-                    startIndex = ?index;
-                    endIndex = cap.endIndex;
-                    text = cap.text
-                  }
-                );
-                log("Starting capture group " # debug_show(group.captureIndex) # " at index " # debug_show(index));
-              }
-            };
-            case _ {}
-          }
-        }
-      };
-
-      func handleGroupEnds(state : State) {
-        for (assertion in nfa.assertions.vals()) {
-          switch (assertion.assertion) {
-            case (#Group(group)) {
-              if (containsState(group.endStates, state)) {
+                captures.put(group.captureIndex - 1, {cap with startIndex = ?index});
+                log("Starting capture group " # debug_show (group.captureIndex) # " at index " # debug_show (index))
+              } else if (not isStart and containsState(group.endStates, state)) {
                 let cap = captures.get(group.captureIndex - 1);
                 switch (cap.startIndex) {
                   case (?startIdx) {
                     let capturedText = substring(text, startIdx, index);
-                    captures.put(
-                      group.captureIndex - 1,
-                      {
-                        groupIndex = cap.groupIndex;
-                        startIndex = cap.startIndex;
-                        endIndex = ?index;
-                        text = ?capturedText
-                      }
-                    );
-                    log("Ending capture group " # debug_show(group.captureIndex) # " at index " # debug_show(index) # " with text: " # capturedText);
+                    captures.put(group.captureIndex - 1, {cap with endIndex = ?index; text = ?capturedText});
+                    log("Ending capture group " # debug_show (group.captureIndex) # " at index " # debug_show (index) # " with text: " # capturedText)
                   };
                   case null {
-                    log("Warning: Attempted to end group " # debug_show(group.captureIndex) # " without start index");
+                    log("Warning: Attempted to end group " # debug_show (group.captureIndex) # " without start index")
                   }
                 }
               }
@@ -134,26 +107,54 @@ module {
         }
       };
 
+      func checkBackreference(captureIndex : Nat) : Bool {
+        let cap = captures.get(captureIndex - 1);
+        switch (cap.text) {
+          case (?capturedText) {
+            let requestedEnd = index + capturedText.size();
+            if (requestedEnd > text.size()) {
+              log("Backreference check failed: would read beyond end of text");
+              return false
+            };
+            let slicedText = substring(text, index, requestedEnd);
+            log("Comparing backreference: expected='" # capturedText # "', found='" # slicedText # "' at index " # debug_show (index));
+            if (slicedText != capturedText) {
+              return false
+            };
+            index += capturedText.size();
+            return true
+          };
+          case null {
+            log("Backreference skipped: no captured text yet for group " # debug_show (captureIndex));
+            return false
+          }
+        }
+      };
+
+      func checkAssertions() : Bool {
+        for (assertion in nfa.assertions.vals()) {
+          switch (assertion.assertion) {
+            case (#Backreference({captureIndex})) {
+              if (not checkBackreference(captureIndex)) {
+                return false
+              }
+            };
+            case _ {}
+          }
+        };
+        return true
+      };
+
       log("Starting match with text: " # text);
 
       label matching while (index < text.size()) {
-        log("Starting new character iteration at index " # debug_show(index) # " of " # debug_show(text.size()));
+        log("Starting new character iteration at index " # debug_show (index) # " of " # debug_show (text.size()));
         let char = charAt(index, text);
         let possibleTransitions = nfa.transitionTable[currentState];
         var matched = false;
         var nextState = currentState;
 
-        handleGroupStarts(currentState);
-
-        var isAcceptState = false;
-        if (containsState(nfa.acceptStates, currentState)) {
-            log("Current state " # debug_show(currentState) # " is an accept state");
-            isAcceptState := true;
-        } else {
-            log("Current state " # debug_show(currentState) # " is not an accept state");
-        };
-
-        log("At index " # debug_show (index) # " with char '" # Text.fromChar(char) # "' in state " # debug_show (currentState));
+        handleGroupTransitions(currentState, true);
 
         label charTransitions for (t in possibleTransitions.vals()) {
           if (t.0 == currentState) {
@@ -162,55 +163,15 @@ module {
                 if (compareChars(char, c, flags)) {
                   matched := true;
                   nextState := t.2;
-                  let quantifierMode = t.3;
-                  let isGreedy = quantifierMode == null or quantifierMode == ? #Greedy;
-                  log("Found exact char match - transitioning to state " # debug_show (t.2));
-
-                  if (not isGreedy and isAcceptState) {
-                    log("Lazy match at accept state - returning early");
-                    return createMatch(text, 0, index, captures)
-                  };
-
-                  if (not isGreedy) {
-                    log("Lazy match - breaking character transitions");
-                    break charTransitions
-                  } 
-                }else {
-                  log("Character '" # Text.fromChar(char) # "' did not match expected '" # Text.fromChar(c) # "'");
+                  log("Found exact char match - transitioning to state " # debug_show (t.2))
                 }
               };
-              case _ {}
-            }
-          }
-        };
-
-        if (not matched) {
-          log("No exact character matches found, checking range matches");
-          label rangeTransitions for (t in possibleTransitions.vals()) {
-            if (t.0 == currentState) {
-              switch (t.1) {
-                case (#Range((start, end))) {
-                  if (isInRange(char, start, end, flags)) {
-                    matched := true;
-                    nextState := t.2;
-                    let quantifierMode = t.3;
-                    let isGreedy = quantifierMode == null or quantifierMode == ? #Greedy;
-                    log("Found range match - transitioning to state " # debug_show (t.2));
-
-                    if (not isGreedy and isAcceptState) {
-                      log("Lazy range match at accept state - returning early");
-                      return createMatch(text, 0, index, captures)
-                    };
-
-                    if (not isGreedy) {
-                      log("Lazy range match - breaking range transitions");
-                      break rangeTransitions
-                    }
-                  }else {
-                    log("Character '" # Text.fromChar(char) # "' not in range '" # Text.fromChar(start) # "'-'" # Text.fromChar(end) # "'");
-                  }
-                };
-                case _ {}
+              case (#Range((start, end))) {
+                if (isInRange(char, start, end, flags)) {
+                  matched := true;
+                  nextState := t.2;
+                  log("Found range match - transitioning to state " # debug_show (t.2))
+                }
               }
             }
           }
@@ -219,35 +180,36 @@ module {
         if (matched) {
           currentState := nextState;
           index += 1;
-          handleGroupEnds(currentState);
-          log("Match succeeded at index " # debug_show(index) # " with char '" # Text.fromChar(char) # "' - moving to state " # debug_show(nextState));
-          if (isAcceptState and index < text.size()) {
-            let nextChar = charAt(index, text);
-            var canContinue = false;
-            log("Checking if can continue past accept state with next char '" # Text.fromChar(nextChar) # "'");
-            for (t in nfa.transitionTable[currentState].vals()) {
-              switch (t.1) {
-                case (#Char(c)) if (compareChars(nextChar, c, flags)) canContinue := true;
-                case (#Range((start, end))) if (isInRange(nextChar, start, end, flags)) canContinue := true
-              }
-            };
-            if (not canContinue) {
-              log("No valid transitions for next character - returning match");
-              return createMatch(text, 0, index, captures)
-            };
-            log("Found valid continuation - proceeding with match");
-          }
+
+          handleGroupTransitions(currentState, false);
+
+          if (containsState(nfa.acceptStates, currentState)) {
+            log("Match succeeded at accept state - verifying assertions");
+            if (not checkAssertions()) {
+              log("Assertion check failed at state " # debug_show (currentState) # " - stopping match");
+              return #ok({
+                string = text;
+                value = "";
+                status = #NoMatch;
+                position = (0, 0);
+                capturedGroups = null;
+                spans = [];
+                lastIndex = index
+              })
+            }
+          };
+
         } else {
-          log("Match failed at index " # debug_show(index) # " - no valid transitions found for char '" # Text.fromChar(char) # "' from state " # debug_show(currentState));
+          log("Match failed at index " # debug_show (index) # " - no valid transitions found");
           break matching
         }
       };
-      log("Reached end of matching at index " # debug_show(index) # " in state " # debug_show(currentState) # " - checking if in accept state");
+
       if (containsState(nfa.acceptStates, currentState)) {
-        log("Match succeeded - in accept state at end of input");
         return createMatch(text, 0, index, captures)
       };
-      log("No match found - stopped at index " # debug_show(index) # " in state " # debug_show(currentState));
+
+      log("No match found");
       #ok({
         string = text;
         value = "";
@@ -258,7 +220,6 @@ module {
         lastIndex = index
       })
     };
-
     public func search(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Match, MatchError> {
       var startIndex = 0;
       let textSize = text.size();
@@ -515,6 +476,6 @@ module {
           #ok(Text.join("", result.vals()))
         }
       }
-    };
+    }
   }
 }
