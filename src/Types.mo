@@ -132,6 +132,8 @@ module{
     };
     #Lookaround: {
       startState: State;
+      states : [State];
+      transitionTable: [[Transition]];
       acceptStates: [State];
       isPositive: Bool;
       isAhead: Bool;
