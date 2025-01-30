@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.6.0...v2.7.0) (2025-01-30)
+
+
+### Features
+
+* Lookaround support ([b7f9919](https://github.com/Demali-876/motoko_regex_engine/commit/b7f99194ba1cfcf99e9690d873201e8510ad40aa))
+
 # [2.6.0](https://github.com/Demali-876/motoko_regex_engine/compare/v2.5.0...v2.6.0) (2025-01-27)
 
 
