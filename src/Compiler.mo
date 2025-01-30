@@ -338,11 +338,35 @@ module {
             case (? #PositiveLookahead or ? #NegativeLookahead) {
               switch (buildNFA(subExpr, groupStartState)) {
                 case (#err(e)) return #err(e);
-                case (#ok(_, subAcceptStates)) {
+                case (#ok(transitions, subAcceptStates)) {
+                  let maxState = Array.foldLeft<Transition, Nat>(
+                        transitions, 
+                        0, 
+                        func(max, t) { Nat.max(max, Nat.max(t.0, t.2)) }
+                      );
+                      let states = Array.tabulate<State>(
+                        maxState + 1,
+                        func(i) { i }
+                      );
+                      let transitionTable = Array.tabulate<[Transition]>(
+                        maxState + 1,
+                        func(state) {
+                          let stateTransitions = Buffer.Buffer<Transition>(4);
+                          for (t in transitions.vals()) {
+                            if (t.0 == state) {
+                              stateTransitions.add(t)
+                            }
+                          };
+                          stateTransitions.sort(Extensions.compareTransitions);
+                          Buffer.toArray(stateTransitions)
+                        }
+                      );
                   assertionBuffer.add({
                     assertion = #Lookaround({
+                      states = states;
                       startState = groupStartState;
                       acceptStates = subAcceptStates;
+                      transitionTable = transitionTable;
                       isPositive = modifier == ? #PositiveLookahead;
                       isAhead = true;
                       position = groupStartState;
@@ -361,11 +385,35 @@ module {
                 case (#ok(length)) {
                   switch (buildNFA(subExpr, groupStartState)) {
                     case (#err(e)) return #err(e);
-                    case (#ok(_, subAcceptStates)) {
+                    case (#ok(transitions, subAcceptStates)) {
+                      let maxState = Array.foldLeft<Transition, Nat>(
+                        transitions, 
+                        0, 
+                        func(max, t) { Nat.max(max, Nat.max(t.0, t.2)) }
+                      );
+                      let states = Array.tabulate<State>(
+                        maxState + 1,
+                        func(i) { i }
+                      ); 
+                      let transitionTable = Array.tabulate<[Transition]>(
+                        maxState + 1,
+                        func(state) {
+                          let stateTransitions = Buffer.Buffer<Transition>(4);
+                          for (t in transitions.vals()) {
+                            if (t.0 == state) {
+                              stateTransitions.add(t)
+                            }
+                          };
+                          stateTransitions.sort(Extensions.compareTransitions);
+                          Buffer.toArray(stateTransitions)
+                        }
+                      );
                       assertionBuffer.add({
                         assertion = #Lookaround({
+                          states = states;
                           startState = groupStartState;
                           acceptStates = subAcceptStates;
+                          transitionTable = transitionTable;
                           isPositive = modifier == ? #PositiveLookbehind;
                           isAhead = false;
                           position = groupStartState;

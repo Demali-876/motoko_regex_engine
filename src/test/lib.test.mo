@@ -74,6 +74,7 @@ actor {
   };
   public query func testSearch(aregextext: Pattern, t: Text) : async Result.Result<Types.Match, Types.RegexError> {
     let regex = Regex.Regex(aregextext, null);
+    regex.enableDebug(true);
     switch (regex.search(t)) {
         case (#ok(result)) {
             #ok(result);

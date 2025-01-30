@@ -61,165 +61,297 @@ module {
     };
 
     public func match(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Match, MatchError> {
-      var currentState = nfa.startState;
-      var index = 0;
+  var currentState = nfa.startState;
+  var index = 0;
+  var captures = Buffer.Buffer<Capture>(0);
 
-      var captures = Buffer.Buffer<Capture>(0);
-      for (assertion in nfa.assertions.vals()) {
-        switch (assertion.assertion) {
-          case (#Group(group)) {
-            captures.add({
-              groupIndex = group.captureIndex;
-              startIndex = null;
-              endIndex = null;
-              text = null
-            });
-            log("Initialized capture group " # debug_show (group.captureIndex))
-          };
-          case _ {}
-        }
+  log("[match] Starting match on text = '" # text # "', length = " # debug_show(text.size()));
+
+  for (assertion in nfa.assertions.vals()) {
+    switch (assertion.assertion) {
+      case (#Group(group)) {
+        captures.add({
+          groupIndex = group.captureIndex;
+          startIndex = null;
+          endIndex = null;
+          text = null
+        });
+        log("[match] Initialized capture group " # debug_show(group.captureIndex))
       };
+      case _ {}
+    }
+  };
 
-      func handleGroupTransitions(state : State, isStart : Bool) {
-        for (assertion in nfa.assertions.vals()) {
-          switch (assertion.assertion) {
-            case (#Group(group)) {
-              if (isStart and group.startState == state) {
-                let cap = captures.get(group.captureIndex - 1);
-                captures.put(group.captureIndex - 1, {cap with startIndex = ?index});
-                log("Starting capture group " # debug_show (group.captureIndex) # " at index " # debug_show (index))
-              } else if (not isStart and containsState(group.endStates, state)) {
-                let cap = captures.get(group.captureIndex - 1);
-                switch (cap.startIndex) {
-                  case (?startIdx) {
-                    let capturedText = substring(text, startIdx, index);
-                    captures.put(group.captureIndex - 1, {cap with endIndex = ?index; text = ?capturedText});
-                    log("Ending capture group " # debug_show (group.captureIndex) # " at index " # debug_show (index) # " with text: " # capturedText)
-                  };
-                  case null {
-                    log("Warning: Attempted to end group " # debug_show (group.captureIndex) # " without start index")
-                  }
-                }
+  func handleGroupTransitions(state : State, isStart : Bool) {
+    for (assertion in nfa.assertions.vals()) {
+      switch (assertion.assertion) {
+        case (#Group(group)) {
+          if (isStart and group.startState == state) {
+            let cap = captures.get(group.captureIndex - 1);
+            captures.put(group.captureIndex - 1, {cap with startIndex = ?index});
+            log("[match] Starting capture group " # debug_show(group.captureIndex) # " at index " # debug_show(index))
+          } else if (not isStart and containsState(group.endStates, state)) {
+            let cap = captures.get(group.captureIndex - 1);
+            switch (cap.startIndex) {
+              case (?startIdx) {
+                let capturedText = substring(text, startIdx, index);
+                captures.put(group.captureIndex - 1, {cap with endIndex = ?index; text = ?capturedText});
+                log("[match] Ending capture group " # debug_show(group.captureIndex)
+                    # " at index " # debug_show(index) # " with text: '" # capturedText # "'")
+              };
+              case null {
+                log("[match] Warning: Attempted to end group "
+                    # debug_show(group.captureIndex) # " without start index")
               }
-            };
-            case _ {}
-          }
-        }
-      };
-
-      func checkBackreference(captureIndex : Nat) : Bool {
-        let cap = captures.get(captureIndex - 1);
-        switch (cap.text) {
-          case (?capturedText) {
-            let requestedEnd = index + capturedText.size();
-            if (requestedEnd > text.size()) {
-              log("Backreference check failed: would read beyond end of text");
-              return false
-            };
-            let slicedText = substring(text, index, requestedEnd);
-            log("Comparing backreference: expected='" # capturedText # "', found='" # slicedText # "' at index " # debug_show (index));
-            if (slicedText != capturedText) {
-              return false
-            };
-            index += capturedText.size();
-            return true
-          };
-          case null {
-            log("Backreference skipped: no captured text yet for group " # debug_show (captureIndex));
-            return false
-          }
-        }
-      };
-
-      func checkAssertions() : Bool {
-        for (assertion in nfa.assertions.vals()) {
-          switch (assertion.assertion) {
-            case (#Backreference({captureIndex})) {
-              if (not checkBackreference(captureIndex)) {
-                return false
-              }
-            };
-            case _ {}
+            }
           }
         };
-        return true
+        case _ {}
+      }
+    }
+  };
+
+  func checkBackreference(captureIndex : Nat) : Bool {
+    let cap = captures.get(captureIndex - 1);
+    switch (cap.text) {
+      case (?capturedText) {
+        let requestedEnd = index + capturedText.size();
+        if (requestedEnd > text.size()) {
+          log("[match] Backreference check failed: would read beyond end of text");
+          return false;
+        };
+        let slicedText = substring(text, index, requestedEnd);
+        log("[match] Checking backreference group "
+            # debug_show(captureIndex)
+            # ": expected='" # capturedText # "', found='" # slicedText
+            # "' at current index = " # debug_show(index));
+        if (slicedText != capturedText) {
+          log("[match] Backreference mismatch");
+          return false;
+        };
+        index += capturedText.size();
+        return true;
       };
+      case null {
+        log("[match] Backreference group " # debug_show(captureIndex)
+            # " skipped: no captured text yet");
+        return false;
+      }
+    }
+  };
 
-      log("Starting match with text: " # text);
+  func checkAssertions() : Bool {
+    let absPos = index;
+    let totalSize = text.size();
 
-      label matching while (index < text.size()) {
-        log("Starting new character iteration at index " # debug_show (index) # " of " # debug_show (text.size()));
-        let char = charAt(index, text);
-        let possibleTransitions = nfa.transitionTable[currentState];
-        var matched = false;
-        var nextState = currentState;
-
-        handleGroupTransitions(currentState, true);
-
-        label charTransitions for (t in possibleTransitions.vals()) {
-          if (t.0 == currentState) {
-            switch (t.1) {
-              case (#Char(c)) {
-                if (compareChars(char, c, flags)) {
-                  matched := true;
-                  nextState := t.2;
-                  log("Found exact char match - transitioning to state " # debug_show (t.2))
+    for (assertion in nfa.assertions.vals()) {
+      switch (assertion.assertion) {
+        case (#Backreference({captureIndex})) {
+          log("[match] Checking backreference to group " # debug_show(captureIndex));
+          if (not checkBackreference(captureIndex)) {
+            log("[match] Backreference assertion failed");
+            return false;
+          }
+        };
+        case (#Lookaround(la)) {
+          log("[match] Checking lookaround, isAhead=" # debug_show(la.isAhead)
+              # ", isPositive=" # debug_show(la.isPositive)
+              # ", length=" # debug_show(la.length));
+          if (la.isAhead) {
+            switch (la.length) {
+              case (?len) {
+                if (absPos + len > totalSize) {
+                  log("[match] Not enough text ahead for positive lookahead");
+                  return not la.isPositive;
+                };
+                let lookaheadText = substring(text, absPos, absPos + len);
+                log("[match] Lookahead text = '" # lookaheadText # "'");
+                let succeeded = runSubNFA(la, lookaheadText, flags);
+                if (succeeded != la.isPositive) {
+                  log("[match] Lookahead assertion failed");
+                  return false;
                 }
               };
-              case (#Range((start, end))) {
-                if (isInRange(char, start, end, flags)) {
-                  matched := true;
-                  nextState := t.2;
-                  log("Found range match - transitioning to state " # debug_show (t.2))
+              case null {
+                let lookaheadText = substring(text, absPos, totalSize);
+                log("[match] Unbounded lookahead text = '" # lookaheadText # "'");
+                let succeeded = runSubNFA(la, lookaheadText, flags);
+                if (succeeded != la.isPositive) {
+                  log("[match] Lookahead assertion failed");
+                  return false;
                 }
-              }
-            }
-          }
-        };
-
-        if (matched) {
-          currentState := nextState;
-          index += 1;
-
-          handleGroupTransitions(currentState, false);
-
-          if (containsState(nfa.acceptStates, currentState)) {
-            log("Match succeeded at accept state - verifying assertions");
-            if (not checkAssertions()) {
-              log("Assertion check failed at state " # debug_show (currentState) # " - stopping match");
-              return #ok({
-                string = text;
-                value = "";
-                status = #NoMatch;
-                position = (0, 0);
-                capturedGroups = null;
-                spans = [];
-                lastIndex = index
-              })
-            }
+              };
+            };
+          } else {
+            switch (la.length) {
+              case (?len) {
+                if (absPos < len) {
+                  log("[match] Not enough text behind for positive lookbehind");
+                  return not la.isPositive;
+                };
+                let behindStart = absPos - len;
+                let lookbehindText = substring(text, behindStart, absPos);
+                log("[match] Lookbehind text = '" # lookbehindText # "'");
+                let succeeded = runSubNFA(la, lookbehindText, flags);
+                if (succeeded != la.isPositive) {
+                  log("[match] Lookbehind assertion failed");
+                  return false;
+                }
+              };
+              case null {
+                log("[match] Variable-length lookbehind not supported");
+                return false;
+              };
+            };
           };
+        };
+        case _ {};
+      };
+    };
+    return true;
+  };
 
-        } else {
-          log("Match failed at index " # debug_show (index) # " - no valid transitions found");
-          break matching
+  func runSubNFA(la : { startState: State;
+                         states : [State];
+                         transitionTable: [[Types.Transition]];
+                         acceptStates: [State];
+                         isPositive: Bool;
+                         isAhead: Bool;
+                         position: State;
+                         length: ?Nat }, 
+                 textChunk : Text, 
+                 flags : ?Flags) : Bool 
+  {
+    var currentState = la.startState;
+    var i = 0;
+    label traverse while (i < textChunk.size()) {
+      let char = charAt(i, textChunk);
+      let transitions = la.transitionTable[currentState];
+      var foundTransition = false;
+
+      label transitionsLoop for (transition in transitions.vals()) {
+        if (transition.0 == currentState) {
+          switch (transition.1) {
+            case (#Char(c)) {
+              if (compareChars(char, c, flags)) {
+                currentState := transition.2;
+                foundTransition := true;
+                i += 1;
+                break transitionsLoop;
+              }
+            };
+            case (#Range((start, end))) {
+              if (isInRange(char, start, end, flags)) {
+                currentState := transition.2;
+                foundTransition := true;
+                i += 1;
+                break transitionsLoop;
+              }
+            };
+          }
         }
       };
+      if (not foundTransition) {
+        log("[match] runSubNFA failed at local index " # debug_show(i)
+            # ", currentState=" # debug_show(currentState));
+        return false;
+      }
+    };
+    let accepted = containsState(la.acceptStates, currentState);
+    log("[match] runSubNFA ended with currentState=" 
+        # debug_show(currentState)
+        # ", accepted=" # debug_show(accepted));
+    return accepted;
+  };
+
+  log("[match] Entering main matching loop...");
+
+  label matching while (index < text.size()) {
+    let char = charAt(index, text);
+    let possibleTransitions = nfa.transitionTable[currentState];
+    var matched = false;
+    var nextState = currentState;
+
+    log("[match] At index=" # debug_show(index) 
+        # ", currentState=" # debug_show(currentState)
+        # ", char='" # Text.fromChar(char) # "'");
+
+    handleGroupTransitions(currentState, true);
+
+    label charTransitions for (t in possibleTransitions.vals()) {
+      if (t.0 == currentState) {
+        switch (t.1) {
+          case (#Char(c)) {
+            if (compareChars(char, c, flags)) {
+              matched := true;
+              nextState := t.2;
+              log("[match] Transition on exact char '" # Text.fromChar(c)
+                  # "' -> nextState=" # debug_show(t.2));
+              break charTransitions;
+            }
+          };
+          case (#Range((start, end))) {
+            if (isInRange(char, start, end, flags)) {
+              matched := true;
+              nextState := t.2;
+              log("[match] Transition on range [" 
+                  # debug_show(start) # "-" # debug_show(end)
+                  # "] -> nextState=" # debug_show(t.2));
+              break charTransitions;
+            }
+          };
+        }
+      }
+    };
+
+    if (matched) {
+      currentState := nextState;
+      index += 1;
+      handleGroupTransitions(currentState, false);
 
       if (containsState(nfa.acceptStates, currentState)) {
-        return createMatch(text, 0, index, captures)
+        log("[match] Reached accept state=" # debug_show(currentState)
+            # ", checking assertions...");
+        if (not checkAssertions()) {
+          log("[match] Assertion check failed at accept state=" 
+              # debug_show(currentState) # ", aborting");
+          return #ok({
+            string = text;
+            value = "";
+            status = #NoMatch;
+            position = (0, 0);
+            capturedGroups = null;
+            spans = [];
+            lastIndex = index
+          });
+        }
       };
+    } else {
+      log("[match] No valid transition from state="
+          # debug_show(currentState)
+          # " with char='" # Text.fromChar(char) # "' at index="
+          # debug_show(index) # ", breaking out");
+      break matching;
+    }
+  };
 
-      log("No match found");
-      #ok({
-        string = text;
-        value = "";
-        status = #NoMatch;
-        position = (0, 0);
-        capturedGroups = null;
-        spans = [];
-        lastIndex = index
-      })
-    };
+  if (containsState(nfa.acceptStates, currentState)) {
+    log("[match] Finished loop in accept state=" # debug_show(currentState)
+        # ", creating final match");
+    return createMatch(text, 0, index, captures);
+  };
+
+  log("[match] No match found, returning #NoMatch");
+  #ok({
+    string = text;
+    value = "";
+    status = #NoMatch;
+    position = (0, 0);
+    capturedGroups = null;
+    spans = [];
+    lastIndex = index
+  })
+};
     public func search(nfa : NFA, text : Text, flags : ?Flags) : Result.Result<Match, MatchError> {
       var startIndex = 0;
       let textSize = text.size();
