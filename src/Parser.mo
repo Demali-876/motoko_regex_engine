@@ -18,23 +18,23 @@ module {
       captureGroupIndex := 1;
 
       if (tokens.size() == 0) {
-        return #err(#GenericError("Empty pattern"))
+        return #err(#GenericError("Empty pattern"));
       };
 
       let result = parseAlternation(namedGroups);
 
       switch (result) {
         case (#err(error)) {
-          return #err(error)
+          return #err(error);
         };
         case (#ok(_)) {
           if (cursor < tokens.size()) {
-            return #err(#UnexpectedToken(tokens[cursor].tokenType))
-          }
-        }
+            return #err(#UnexpectedToken(tokens[cursor].tokenType));
+          };
+        };
       };
 
-      result
+      result;
     };
 
     private func parseAlternation(namedGroups : TrieMap.TrieMap<Text, Nat>) : Result.Result<Types.AST, Types.RegexError> {
@@ -42,9 +42,9 @@ module {
 
       switch (parseConcatenation()) {
         case (#ok(node)) {
-          nodes := Array.append(nodes, [node])
+          nodes := Array.append(nodes, [node]);
         };
-        case (#err(error)) {return #err(error)}
+        case (#err(error)) { return #err(error) };
       };
 
       label aloop while (cursor < tokens.size()) {
@@ -56,35 +56,35 @@ module {
               switch (peekToken()) {
                 case (?nextToken) {
                   if (nextToken.tokenType == #Alternation) {
-                    return #err(#GenericError("Empty alternative not allowed in pattern"))
-                  }
+                    return #err(#GenericError("Empty alternative not allowed in pattern"));
+                  };
                 };
                 case (null) {
-                  return #err(#GenericError("Unexpected end of pattern after '|'"))
-                }
+                  return #err(#GenericError("Unexpected end of pattern after '|'"));
+                };
               };
 
               switch (parseConcatenation()) {
                 case (#ok(node)) {
-                  nodes := Array.append(nodes, [node])
+                  nodes := Array.append(nodes, [node]);
                 };
-                case (#err(error)) {return #err(error)}
-              }
+                case (#err(error)) { return #err(error) };
+              };
             } else {
-              break aloop
-            }
+              break aloop;
+            };
           };
-          case (null) {break aloop}
-        }
+          case (null) { break aloop };
+        };
       };
 
       if (nodes.size() == 1) {
-        #ok(nodes[0])
+        #ok(nodes[0]);
       } else if (nodes.size() > 1) {
-        #ok(#Alternation(nodes))
+        #ok(#Alternation(nodes));
       } else {
-        #err(#GenericError("Empty pattern"))
-      }
+        #err(#GenericError("Empty pattern"));
+      };
     };
 
     private func parseConcatenation() : Result.Result<Types.AST, Types.RegexError> {
@@ -95,53 +95,53 @@ module {
           if (token.tokenType != #Alternation) {
             switch (parseSingleExpression(namedGroups)) {
               case (#ok(node)) {
-                nodes := Array.append(nodes, [node])
+                nodes := Array.append(nodes, [node]);
               };
-              case (#err(error)) {return #err(error)}
-            }
-          }
+              case (#err(error)) { return #err(error) };
+            };
+          };
         };
-        case (null) {}
+        case (null) {};
       };
 
       label cloop while (cursor < tokens.size()) {
         switch (peekToken()) {
           case (?token) {
             switch (token.tokenType) {
-              case (#Alternation) {break cloop};
+              case (#Alternation) { break cloop };
               case (#Group(groupData)) {
                 if (
-                  groupData.modifier == ? #NegativeLookbehind or
-                  groupData.modifier == ? #PositiveLookbehind
+                  groupData.modifier == ?#NegativeLookbehind or
+                  groupData.modifier == ?#PositiveLookbehind
                 ) {
-                  break cloop
+                  break cloop;
                 };
                 switch (parseSingleExpression(namedGroups)) {
                   case (#ok(node)) {
-                    nodes := Array.append(nodes, [node])
+                    nodes := Array.append(nodes, [node]);
                   };
-                  case (#err(error)) {return #err(error)}
-                }
+                  case (#err(error)) { return #err(error) };
+                };
               };
               case (_) {
                 switch (parseSingleExpression(namedGroups)) {
                   case (#ok(node)) {
-                    nodes := Array.append(nodes, [node])
+                    nodes := Array.append(nodes, [node]);
                   };
-                  case (#err(error)) {return #err(error)}
-                }
-              }
-            }
+                  case (#err(error)) { return #err(error) };
+                };
+              };
+            };
           };
-          case (null) {break cloop}
-        }
+          case (null) { break cloop };
+        };
       };
 
       switch (nodes.size()) {
-        case 0 {#err(#GenericError("Empty pattern segment"))};
-        case 1 {#ok(nodes[0])};
-        case _ {#ok(#Concatenation(nodes))}
-      }
+        case 0 { #err(#GenericError("Empty pattern segment")) };
+        case 1 { #ok(nodes[0]) };
+        case _ { #ok(#Concatenation(nodes)) };
+      };
     };
 
     private func parseSingleExpression(namedGroups : TrieMap.TrieMap<Text, Nat>) : Result.Result<Types.AST, Types.RegexError> {
@@ -150,37 +150,37 @@ module {
           switch (token.tokenType) {
             case (#Character(char)) {
               ignore advanceCursor();
-              parseQuantifierIfPresent(#Character(char))
+              parseQuantifierIfPresent(#Character(char));
             };
             case (#Metacharacter(metaType)) {
               ignore advanceCursor();
-              parseQuantifierIfPresent(#Metacharacter(metaType))
+              parseQuantifierIfPresent(#Metacharacter(metaType));
             };
             case (#Anchor(anchorType)) {
               ignore advanceCursor();
-              #ok(#Anchor(anchorType))
+              #ok(#Anchor(anchorType));
             };
             case (#CharacterClass(isNegated, classes)) {
               ignore advanceCursor();
               switch (validateCharacterClass(classes)) {
-                case (#err(error)) {return #err(error)};
+                case (#err(error)) { return #err(error) };
                 case (#ok()) {
                   let astClasses = Array.map<Types.CharacterClass, Types.AST>(
                     classes,
-                    characterClassElementToAST
+                    characterClassElementToAST,
                   );
-                  parseQuantifierIfPresent(#CharacterClass({isNegated = isNegated; classes = astClasses}))
-                }
-              }
+                  parseQuantifierIfPresent(#CharacterClass({ isNegated = isNegated; classes = astClasses }));
+                };
+              };
             };
             case (#Group(groupData)) {
               ignore advanceCursor();
               switch (parseGroup(groupData, namedGroups)) {
                 case (#ok(groupAst)) {
-                  parseQuantifierIfPresent(groupAst)
+                  parseQuantifierIfPresent(groupAst);
                 };
-                case (#err(e)) {#err(e)}
-              }
+                case (#err(e)) { #err(e) };
+              };
             };
 
             case (#Backreference) {
@@ -188,58 +188,58 @@ module {
               let name = token.value;
 
               if (captureGroupIndex == 1) {
-                return #err(#GenericError("Cannot use backreference '" # name # "' before any capturing group is defined"))
+                return #err(#GenericError("Cannot use backreference '" # name # "' before any capturing group is defined"));
               };
 
               switch (namedGroups.get(name)) {
                 case (?_) {
-                  #ok(#Backreference(name))
+                  #ok(#Backreference(name));
                 };
                 case null {
-                  #err(#GenericError("Backreference '" # name # "' appears before its corresponding group"))
-                }
-              }
+                  #err(#GenericError("Backreference '" # name # "' appears before its corresponding group"));
+                };
+              };
             };
             case (_) {
-              #err(#UnexpectedToken(token.tokenType))
-            }
-          }
+              #err(#UnexpectedToken(token.tokenType));
+            };
+          };
         };
         case (null) {
-          #err(#UnexpectedEndOfInput)
-        }
-      }
+          #err(#UnexpectedEndOfInput);
+        };
+      };
     };
 
     private func validateCharacterClass(classes : [Types.CharacterClass]) : Result.Result<(), Types.RegexError> {
       if (classes.size() == 0) {
-        return #err(#GenericError("Empty character class"))
+        return #err(#GenericError("Empty character class"));
       };
 
       for (cclass in classes.vals()) {
         switch (cclass) {
           case (#Range(start, end)) {
             if (Char.toNat32(start) > Char.toNat32(end)) {
-              return #err(#GenericError("Invalid character range: " # debug_show (start) # "-" # debug_show (end)))
-            }
+              return #err(#GenericError("Invalid character range: " # debug_show (start) # "-" # debug_show (end)));
+            };
           };
           case (#Quantified(_, quantifier)) {
             if (quantifier.min > maxQuantifier) {
-              return #err(#InvalidQuantifier("Quantifier min value too large"))
+              return #err(#InvalidQuantifier("Quantifier min value too large"));
             };
             switch (quantifier.max) {
               case (?max) {
                 if (max > maxQuantifier or max < quantifier.min) {
-                  return #err(#InvalidQuantifier("Invalid quantifier range"))
-                }
+                  return #err(#InvalidQuantifier("Invalid quantifier range"));
+                };
               };
-              case (null) {}
-            }
+              case (null) {};
+            };
           };
-          case (_) {}
-        }
+          case (_) {};
+        };
       };
-      #ok()
+      #ok();
     };
 
     private func parseGroup(
@@ -247,25 +247,25 @@ module {
         modifier : ?Types.GroupModifierType;
         subTokens : [Types.Token];
         quantifier : ?Types.QuantifierType;
-        name : ?Text
+        name : ?Text;
       },
-      namedGroups : TrieMap.TrieMap<Text, Nat>
+      namedGroups : TrieMap.TrieMap<Text, Nat>,
     ) : Result.Result<Types.AST, Types.RegexError> {
       switch (groupData.quantifier) {
         case (?quantifier) {
           if (quantifier.min > maxQuantifier) {
-            return #err(#InvalidQuantifier("Group quantifier min value too large"))
+            return #err(#InvalidQuantifier("Group quantifier min value too large"));
           };
           switch (quantifier.max) {
             case (?max) {
               if (max > maxQuantifier or max < quantifier.min) {
-                return #err(#InvalidQuantifier("Invalid group quantifier range"))
-              }
+                return #err(#InvalidQuantifier("Invalid group quantifier range"));
+              };
             };
-            case (null) {}
-          }
+            case (null) {};
+          };
         };
-        case (null) {}
+        case (null) {};
       };
 
       let savedTokens = tokens;
@@ -283,54 +283,54 @@ module {
       switch (result) {
         case (#ok(groupNode)) {
           let isCapturing = switch (groupData.modifier) {
-            case (? #NonCapturing) {false};
-            case (_) {true}
+            case (?#NonCapturing) { false };
+            case (_) { true };
           };
 
           let currentCaptureIndex = if (isCapturing) {
             let index = captureGroupIndex;
             captureGroupIndex += 1;
-            ?index
+            ?index;
           } else {
-            null
+            null;
           };
 
           switch (groupData.name) {
             case (?name) {
               if (namedGroups.get(name) != null) {
-                return #err(#GenericError("Duplicate named group '" # name # "'"))
+                return #err(#GenericError("Duplicate named group '" # name # "'"));
               };
               switch (currentCaptureIndex) {
-                case (?index) {namedGroups.put(name, index)};
+                case (?index) { namedGroups.put(name, index) };
                 case null {
-                  return #err(#GenericError("Invalid named group capture index"))
-                }
-              }
+                  return #err(#GenericError("Invalid named group capture index"));
+                };
+              };
             };
-            case (null) {}
+            case (null) {};
           };
 
           let groupAST = #Group({
             subExpr = groupNode;
             modifier = groupData.modifier;
             captureIndex = currentCaptureIndex;
-            name = groupData.name
+            name = groupData.name;
           });
 
           switch (groupData.quantifier) {
             case (?quantifier) {
-              #ok(#Quantifier({subExpr = groupAST; quantifier = quantifier}))
+              #ok(#Quantifier({ subExpr = groupAST; quantifier = quantifier }));
             };
             case (null) {
-              #ok(groupAST)
-            }
-          }
+              #ok(groupAST);
+            };
+          };
         };
         case (#err(error)) {
           captureGroupIndex := savedCaptureIndex;
-          #err(error)
-        }
-      }
+          #err(error);
+        };
+      };
     };
 
     private func parseQuantifierIfPresent(astNode : Types.AST) : Result.Result<Types.AST, Types.RegexError> {
@@ -339,77 +339,77 @@ module {
           case (#Quantifier(quantifier)) {
             switch (astNode) {
               case (#Anchor(_)) {
-                #err(#GenericError("Cannot apply quantifier to an anchor"))
+                #err(#GenericError("Cannot apply quantifier to an anchor"));
               };
-              case (#Group({modifier = ?_; subExpr = _})) {
-                #err(#GenericError("Cannot apply quantifier to a lookaround assertion"))
+              case (#Group({ modifier = ?_; subExpr = _ })) {
+                #err(#GenericError("Cannot apply quantifier to a lookaround assertion"));
               };
               case (#Quantifier(_)) {
-                #err(#GenericError("Cannot directly quantify a quantified expression"))
+                #err(#GenericError("Cannot directly quantify a quantified expression"));
               };
               case (_) {
                 if (quantifier.min > maxQuantifier) {
-                  return #err(#InvalidQuantifier("Quantifier min value too large"))
+                  return #err(#InvalidQuantifier("Quantifier min value too large"));
                 };
                 switch (quantifier.max) {
                   case (?max) {
                     if (max > maxQuantifier or max < quantifier.min) {
-                      return #err(#InvalidQuantifier("Invalid quantifier range"))
-                    }
+                      return #err(#InvalidQuantifier("Invalid quantifier range"));
+                    };
                   };
-                  case (null) {}
+                  case (null) {};
                 };
                 ignore advanceCursor();
-                #ok(#Quantifier({subExpr = astNode; quantifier = quantifier}))
-              }
-            }
+                #ok(#Quantifier({ subExpr = astNode; quantifier = quantifier }));
+              };
+            };
           };
           case (_) {
-            #ok(astNode)
-          }
-        }
+            #ok(astNode);
+          };
+        };
       } else {
-        #ok(astNode)
-      }
+        #ok(astNode);
+      };
     };
 
     private func characterClassElementToAST(classElement : Types.CharacterClass) : Types.AST {
       switch (classElement) {
         case (#Single(char)) {
-          #Character(char)
+          #Character(char);
         };
         case (#Range(startChar, endChar)) {
-          #Range((startChar, endChar))
+          #Range((startChar, endChar));
         };
         case (#Metacharacter(metaType)) {
-          #Metacharacter(metaType)
+          #Metacharacter(metaType);
         };
         case (#Quantified(classItem, quantifier)) {
           let subAst = characterClassElementToAST(classItem);
           #Quantifier({
             subExpr = subAst;
-            quantifier = quantifier
-          })
-        }
-      }
+            quantifier = quantifier;
+          });
+        };
+      };
     };
 
     private func peekToken() : ?Types.Token {
       if (cursor < tokens.size()) {
-        ?tokens[cursor]
+        ?tokens[cursor];
       } else {
-        null
-      }
+        null;
+      };
     };
 
     private func advanceCursor() : ?Types.Token {
       if (cursor < tokens.size()) {
         let token = tokens[cursor];
         cursor += 1;
-        ?token
+        ?token;
       } else {
-        null
-      }
-    }
-  }
-}
+        null;
+      };
+    };
+  };
+};
