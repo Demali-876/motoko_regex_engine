@@ -7,7 +7,7 @@ The `sub()` function substitutes matches in the input string with a specified re
 ## **Signature**
 
 ```motoko
-public func sub(text: Text, replacement: Text, maxReplacements: ?Nat): Result.Result<Text, RegexError>
+public func sub(text: Text, replacement: Text, maxSubstitutions: ?Nat): Result.Result<Text, RegexError>
 ```
 
 ---

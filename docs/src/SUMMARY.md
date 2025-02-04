@@ -15,5 +15,8 @@
   - [inspectState()](functions/inspectState.md)
   - [enableDebug()](functions/enabledebug.md)
 - [Match Records](match-records.md)
+- [Unicode Properties](unicode-properties.md)
+- [Backreferences](backreferences.md)
+- [Look Around Assertions](lookaround-assertions.md)
 - [Examples](examples.md)
 - [Contributions](contributing.md)

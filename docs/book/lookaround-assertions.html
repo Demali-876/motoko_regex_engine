@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>sub()</title>
+        <title>Look Around Assertions</title>
 
 
         <!-- Custom HTML head -->
@@ -12,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="../favicon.svg">
-        <link rel="shortcut icon" href="../favicon.png">
-        <link rel="stylesheet" href="../css/variables.css">
-        <link rel="stylesheet" href="../css/general.css">
-        <link rel="stylesheet" href="../css/chrome.css">
-        <link rel="stylesheet" href="../css/print.css" media="print">
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="../fonts/fonts.css">
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="../highlight.css">
-        <link rel="stylesheet" href="../tomorrow-night.css">
-        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "../";
+            var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc.js"></script>
+        <script src="toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -89,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -123,7 +123,7 @@
                     <h1 class="menu-title"></h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -152,117 +152,52 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="sub"><a class="header" href="#sub"><strong>sub()</strong></a></h1>
-<p>The <code>sub()</code> function substitutes matches in the input string with a specified replacement string. Unlike <code>replace</code>, it allows the use of regex patterns in the replacement string.</p>
-<hr />
-<h2 id="signature"><a class="header" href="#signature"><strong>Signature</strong></a></h2>
-<pre><code class="language-motoko">public func sub(text: Text, replacement: Text, maxSubstitutions: ?Nat): Result.Result&lt;Text, RegexError&gt;
-</code></pre>
-<hr />
-<h3 id="parameters"><a class="header" href="#parameters"><strong>Parameters</strong></a></h3>
-<div class="table-wrapper"><table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>text</code></td><td><code>Text</code></td><td>The input string to perform substitutions on.</td></tr>
-<tr><td><code>replacement</code></td><td><code>Text</code></td><td>The string (can include regex) to replace matches with.</td></tr>
-<tr><td><code>maxSubstitutions</code></td><td><code>?Nat</code></td><td>Optional limit on the number of substitutions. If <code>null</code>, substitutes all.</td></tr>
+                        <h1 id="lookaround-assertions"><a class="header" href="#lookaround-assertions">Lookaround Assertions</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>Lookaround assertions allow for pattern matching based on surrounding text without including that text in the final match. They enable advanced pattern constraints while maintaining flexibility in regex processing. However, in many cases, using a stricter pattern without lookarounds can be a better approach, leading to simpler and more efficient regex expressions.</p>
+<h2 id="lookaround-types"><a class="header" href="#lookaround-types">Lookaround Types</a></h2>
+<p>Lookaround assertions are divided into <strong>Lookahead</strong> and <strong>Lookbehind</strong>, and each has <strong>Positive</strong> and <strong>Negative</strong> variations. The following table summarizes them:</p>
+<div class="table-wrapper"><table><thead><tr><th>Type</th><th>Positive</th><th>Negative</th></tr></thead><tbody>
+<tr><td><strong>Look-Ahead</strong></td><td><code>A(?=B)</code> - Match <code>A</code> if <code>B</code> follows</td><td><code>A(?!B)</code> - Match <code>A</code> if <code>B</code> does <strong>not</strong> follow</td></tr>
+<tr><td><strong>Look-Behind</strong></td><td><code>(?&lt;=B)A</code> - Match <code>A</code> if <code>B</code> precedes</td><td><code>(?&lt;!B)A</code> - Match <code>A</code> if <code>B</code> does <strong>not</strong> precede</td></tr>
 </tbody></table>
 </div>
-<hr />
-<h3 id="return-value"><a class="header" href="#return-value"><strong>Return Value</strong></a></h3>
-<p><code>Result.Result&lt;Text, RegexError&gt;</code>:</p>
+<h3 id="lookahead"><a class="header" href="#lookahead">Lookahead</a></h3>
 <ul>
-<li><strong>On Success</strong> (<code>Text</code>):
-<ul>
-<li>The updated string after performing substitutions.</li>
+<li><strong>Positive Lookahead (<code>?=</code>)</strong>: Ensures a pattern exists after the current position without consuming it.</li>
+<li><strong>Negative Lookahead (<code>?!</code>)</strong>: Ensures a pattern does <em>not</em> exist after the current position.</li>
 </ul>
-</li>
-<li><strong>On Failure</strong> (<code>RegexError</code>):
-<ul>
-<li>Indicates why the operation failed (e.g., invalid regex or replacement).</li>
-</ul>
-</li>
-</ul>
-<hr />
-<h3 id="behavior"><a class="header" href="#behavior"><strong>Behavior</strong></a></h3>
-<ol>
-<li>
-<p><strong>Input Validation</strong>:</p>
-<ul>
-<li>Checks if the regex has been compiled.</li>
-<li>Returns <code>#NotCompiled</code> error if unavailable.</li>
-</ul>
-</li>
-<li>
-<p><strong>Substitution Process</strong>:</p>
-<ul>
-<li>Matches the regex pattern in the input string.</li>
-<li>Substitutes each match with the specified replacement string.</li>
-<li>Respects the <code>maxReplacements</code> limit if provided.</li>
-</ul>
-</li>
-<li>
-<p><strong>Result Construction</strong>:</p>
-<ul>
-<li>Returns the updated string on success.</li>
-<li>Returns <code>RegexError</code> for invalid inputs or uncompiled regex.</li>
-</ul>
-</li>
-</ol>
-<hr />
-<h3 id="implementation"><a class="header" href="#implementation"><strong>Implementation</strong></a></h3>
-<pre><code class="language-motoko">public func sub(text: Text, replacement: Text, maxReplacements: ?Nat): Result.Result&lt;Text, RegexError&gt; {
-    switch (nfa) {
-        case (null) #err(#NotCompiled);
-        case (?compiledNFA) {
-            matcher.sub(compiledNFA, text, replacement, maxReplacements)
-        };
-    }
-};
+<pre><code class="language-regex">foo(?=bar)   // Matches "foo" only if followed by "bar"
+foo(?!bar)   // Matches "foo" only if NOT followed by "bar"
 </code></pre>
-<hr />
-<h3 id="example-usage"><a class="header" href="#example-usage"><strong>Example Usage</strong></a></h3>
-<h4 id="1-substituting-all-matches"><a class="header" href="#1-substituting-all-matches"><strong>1. Substituting All Matches</strong></a></h4>
-<pre><code class="language-motoko">let subRegex = Regex.Regex("\d+");
-let result = subRegex.sub("I have 10 bananas and 20 apples", "many", null);
-
-switch (result) {
-  case (#ok(updatedText)) {
-    Debug.print("Updated text: " # updatedText);
-  };
-  case (#err(error)) {
-    Debug.print("Error: " # debug_show(error));
-  };
-}
+<h3 id="lookbehind"><a class="header" href="#lookbehind">Lookbehind</a></h3>
+<ul>
+<li><strong>Positive Lookbehind (<code>?&lt;=</code>)</strong>: Ensures a pattern exists before the current position.</li>
+<li><strong>Negative Lookbehind (<code>?&lt;!</code>)</strong>: Ensures a pattern does <em>not</em> exist before the current position.</li>
+</ul>
+<pre><code class="language-regex">(?&lt;=bar)foo   // Matches "foo" only if preceded by "bar"
+(?&lt;!bar)foo   // Matches "foo" only if NOT preceded by "bar"
 </code></pre>
-<p><strong>Output</strong>:</p>
-<pre><code>Updated text: I have many bananas and many apples
-</code></pre>
-<hr />
-<h4 id="2-substituting-with-limit"><a class="header" href="#2-substituting-with-limit"><strong>2. Substituting with Limit</strong></a></h4>
-<pre><code class="language-motoko">let subRegex = Regex.Regex("\\d+");
-let result = subRegex.sub("I have 10 bananas and 20 apples", "many", ?1);
-
-switch (result) {
-  case (#ok(updatedText)) {
-    Debug.print("Updated text: " # updatedText);
-  };
-  case (#err(error)) {
-    Debug.print("Error: " # debug_show(error));
-  };
-}
-</code></pre>
-<p><strong>Output</strong>:</p>
-<pre><code>Updated text: I have many bananas and 20 apples
-</code></pre>
+<h2 id="behavior-and-considerations"><a class="header" href="#behavior-and-considerations">Behavior and Considerations</a></h2>
+<ul>
+<li>Lookaround assertions do not consume characters; they only assert conditions.</li>
+<li>Combining lookahead and lookbehind can create complex matching rules.</li>
+<li>Negative lookaround can be used to enforce exclusions in matching.</li>
+<li>Lookbehind patterns must have a fixed length.</li>
+<li>In many cases, defining a stricter pattern instead of relying on lookaround assertions results in a more efficient and readable regex.</li>
+</ul>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>Lookaround assertions provide powerful matching capabilities without consuming characters. However, in most cases, defining a stricter pattern can lead to better performance and clarity. The Motoko Regex Engine supports both lookahead and lookbehind assertions, but users should consider whether they can achieve the same result with a more precise pattern before resorting to lookarounds.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../functions/replace.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="backreferences.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../functions/split.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="examples.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -272,11 +207,11 @@ switch (result) {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../functions/replace.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="backreferences.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../functions/split.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="examples.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -307,13 +242,13 @@ switch (result) {
         </script>
 
 
-        <script src="../elasticlunr.min.js"></script>
-        <script src="../mark.min.js"></script>
-        <script src="../searcher.js"></script>
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
 
-        <script src="../clipboard.min.js"></script>
-        <script src="../highlight.js"></script>
-        <script src="../book.js"></script>
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
 
