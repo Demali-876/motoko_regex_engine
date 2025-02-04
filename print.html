@@ -853,7 +853,7 @@ switch (result) {
 <p>The <code>sub()</code> function substitutes matches in the input string with a specified replacement string. Unlike <code>replace</code>, it allows the use of regex patterns in the replacement string.</p>
 <hr />
 <h2 id="signature-5"><a class="header" href="#signature-5"><strong>Signature</strong></a></h2>
-<pre><code class="language-motoko">public func sub(text: Text, replacement: Text, maxReplacements: ?Nat): Result.Result&lt;Text, RegexError&gt;
+<pre><code class="language-motoko">public func sub(text: Text, replacement: Text, maxSubstitutions: ?Nat): Result.Result&lt;Text, RegexError&gt;
 </code></pre>
 <hr />
 <h3 id="parameters-5"><a class="header" href="#parameters-5"><strong>Parameters</strong></a></h3>
@@ -1215,6 +1215,79 @@ switch(regex.inspectState(3)) {
     };
 };
 </code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="unicode-support-and-unicode-properties"><a class="header" href="#unicode-support-and-unicode-properties">Unicode Support and Unicode Properties</a></h1>
+<h2 id="introduction-1"><a class="header" href="#introduction-1">Introduction</a></h2>
+<p>The Motoko Regex Engine supports Unicode properties, allowing users to match specific character categories using <code>\p{Property}</code> and <code>\P{Property}</code> syntax. This enhances pattern matching by enabling character classification based on Unicode properties.</p>
+<h2 id="syntax-1"><a class="header" href="#syntax-1">Syntax</a></h2>
+<p>Unicode properties can be matched using the following syntax:</p>
+<pre><code class="language-regex">\p{Property}   // Matches a character with the specified Unicode property
+\P{Property}   // Matches a character that does NOT have the specified Unicode property
+</code></pre>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<pre><code class="language-regex">\p{L}   // Matches any letter
+\p{N}   // Matches any number
+\P{P}   // Matches any character except punctuation
+</code></pre>
+<h2 id="supported-unicode-properties"><a class="header" href="#supported-unicode-properties">Supported Unicode Properties</a></h2>
+<p>The engine supports a subset of Unicode properties:</p>
+<ul>
+<li><code>L</code>  (Letter)</li>
+<li><code>Ll</code> (Lowercase Letter)</li>
+<li><code>Lu</code> (Uppercase Letter)</li>
+<li><code>N</code>  (Number)</li>
+<li><code>P</code>  (Punctuation)</li>
+<li><code>Zs</code> (Separator, Space)</li>
+<li><code>Emoji</code> (Emoji characters)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="backreferences"><a class="header" href="#backreferences">Backreferences</a></h1>
+<h2 id="introduction-2"><a class="header" href="#introduction-2">Introduction</a></h2>
+<p>Backreferences allow a regular expression to match repeated substrings by referring back to a previously captured group. They enable patterns to enforce consistency within the matched text.</p>
+<h2 id="syntax-2"><a class="header" href="#syntax-2">Syntax</a></h2>
+<p>Backreferences use the following syntax:</p>
+<ul>
+<li><code>\1, \2, ...</code>: Refers to a numbered capturing group in order of appearance and can only be used in <code>replace</code> and <code>sub</code> methods.</li>
+<li><code>\k&lt;name&gt;</code>: Refers to a named capturing group and can be used within matching.</li>
+</ul>
+<h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
+<pre><code class="language-regex">(?&lt;greeting&gt;hello)\s+\k&lt;greeting&gt;
+</code></pre>
+<p>This matches hello followed by one or more space followed by hello again.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="lookaround-assertions"><a class="header" href="#lookaround-assertions">Lookaround Assertions</a></h1>
+<h2 id="introduction-3"><a class="header" href="#introduction-3">Introduction</a></h2>
+<p>Lookaround assertions allow for pattern matching based on surrounding text without including that text in the final match. They enable advanced pattern constraints while maintaining flexibility in regex processing. However, in many cases, using a stricter pattern without lookarounds can be a better approach, leading to simpler and more efficient regex expressions.</p>
+<h2 id="lookaround-types"><a class="header" href="#lookaround-types">Lookaround Types</a></h2>
+<p>Lookaround assertions are divided into <strong>Lookahead</strong> and <strong>Lookbehind</strong>, and each has <strong>Positive</strong> and <strong>Negative</strong> variations. The following table summarizes them:</p>
+<div class="table-wrapper"><table><thead><tr><th>Type</th><th>Positive</th><th>Negative</th></tr></thead><tbody>
+<tr><td><strong>Look-Ahead</strong></td><td><code>A(?=B)</code> - Match <code>A</code> if <code>B</code> follows</td><td><code>A(?!B)</code> - Match <code>A</code> if <code>B</code> does <strong>not</strong> follow</td></tr>
+<tr><td><strong>Look-Behind</strong></td><td><code>(?&lt;=B)A</code> - Match <code>A</code> if <code>B</code> precedes</td><td><code>(?&lt;!B)A</code> - Match <code>A</code> if <code>B</code> does <strong>not</strong> precede</td></tr>
+</tbody></table>
+</div>
+<h3 id="lookahead"><a class="header" href="#lookahead">Lookahead</a></h3>
+<ul>
+<li><strong>Positive Lookahead (<code>?=</code>)</strong>: Ensures a pattern exists after the current position without consuming it.</li>
+<li><strong>Negative Lookahead (<code>?!</code>)</strong>: Ensures a pattern does <em>not</em> exist after the current position.</li>
+</ul>
+<pre><code class="language-regex">foo(?=bar)   // Matches "foo" only if followed by "bar"
+foo(?!bar)   // Matches "foo" only if NOT followed by "bar"
+</code></pre>
+<h3 id="lookbehind"><a class="header" href="#lookbehind">Lookbehind</a></h3>
+<ul>
+<li><strong>Positive Lookbehind (<code>?&lt;=</code>)</strong>: Ensures a pattern exists before the current position.</li>
+<li><strong>Negative Lookbehind (<code>?&lt;!</code>)</strong>: Ensures a pattern does <em>not</em> exist before the current position.</li>
+</ul>
+<pre><code class="language-regex">(?&lt;=bar)foo   // Matches "foo" only if preceded by "bar"
+(?&lt;!bar)foo   // Matches "foo" only if NOT preceded by "bar"
+</code></pre>
+<h2 id="behavior-and-considerations"><a class="header" href="#behavior-and-considerations">Behavior and Considerations</a></h2>
+<ul>
+<li>Lookaround assertions do not consume characters; they only assert conditions.</li>
+<li>Combining lookahead and lookbehind can create complex matching rules.</li>
+<li>Negative lookaround can be used to enforce exclusions in matching.</li>
+<li>Lookbehind patterns must have a fixed length.</li>
+<li>In many cases, defining a stricter pattern instead of relying on lookaround assertions results in a more efficient and readable regex.</li>
+</ul>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>Lookaround assertions provide powerful matching capabilities without consuming characters. However, in most cases, defining a stricter pattern can lead to better performance and clarity. The Motoko Regex Engine supports both lookahead and lookbehind assertions, but users should consider whether they can achieve the same result with a more precise pattern before resorting to lookarounds.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="regex-examples-for-motoko-regex-engine"><a class="header" href="#regex-examples-for-motoko-regex-engine">Regex Examples for Motoko Regex Engine</a></h1>
 <h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
 <ul>

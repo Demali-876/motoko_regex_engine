@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Examples</title>
+        <title>Backreferences</title>
 
 
         <!-- Custom HTML head -->
@@ -152,64 +152,29 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="regex-examples-for-motoko-regex-engine"><a class="header" href="#regex-examples-for-motoko-regex-engine">Regex Examples for Motoko Regex Engine</a></h1>
-<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+                        <h1 id="backreferences"><a class="header" href="#backreferences">Backreferences</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>Backreferences allow a regular expression to match repeated substrings by referring back to a previously captured group. They enable patterns to enforce consistency within the matched text.</p>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p>Backreferences use the following syntax:</p>
 <ul>
-<li><a href="#regex-examples-for-motoko-regex-engine">Regex Examples for Motoko Regex Engine</a>
-<ul>
-<li><a href="#table-of-contents">Table of Contents</a></li>
-<li><a href="#internet-computer-identifiers">Internet Computer Identifiers</a>
-<ul>
-<li><a href="#principal-id">Principal ID</a></li>
-<li><a href="#account-id">Account ID</a></li>
+<li><code>\1, \2, ...</code>: Refers to a numbered capturing group in order of appearance and can only be used in <code>replace</code> and <code>sub</code> methods.</li>
+<li><code>\k&lt;name&gt;</code>: Refers to a named capturing group and can be used within matching.</li>
 </ul>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="internet-computer-identifiers"><a class="header" href="#internet-computer-identifiers">Internet Computer Identifiers</a></h2>
-<h3 id="principal-id"><a class="header" href="#principal-id">Principal ID</a></h3>
-<p>Pattern to validate Principal ID format.</p>
-<pre><code class="language-motoko">// Anonymous Principal will be rejected
-let principalPattern = Regex.Regex("^[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{3}$", null);
-public func validatePrincipalId(id: Text): Bool {
-    switch(principalPattern.match(id)) {
-        case (#ok(result)) {
-            switch(result.status) {
-                case (#FullMatch) true;
-                case (#NoMatch) false;
-            };
-        };
-        case (#err(_)) false;
-    };
-};
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<pre><code class="language-regex">(?&lt;greeting&gt;hello)\s+\k&lt;greeting&gt;
 </code></pre>
-<h3 id="account-id"><a class="header" href="#account-id">Account ID</a></h3>
-<p>Pattern to validate Account ID format.</p>
-<pre><code class="language-motoko">// Account ID (32 bytes in hexadecimal)
-let accountPattern = Regex.Regex("^[0-9a-f]{64}$", null);
-public func validateAccountId(id: Text): Bool {
-    switch(accountPattern.match(id)) {
-        case (#ok(result)) {
-            switch(result.status) {
-                case (#FullMatch) true;
-                case (#NoMatch) false;
-            };
-        };
-        case (#err(_)) false;
-    };
-};
-</code></pre>
+<p>This matches hello followed by one or more space followed by hello again.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="lookaround-assertions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="unicode-properties.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="contributing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="lookaround-assertions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -219,11 +184,11 @@ public func validateAccountId(id: Text): Bool {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="lookaround-assertions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="unicode-properties.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="contributing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="lookaround-assertions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
