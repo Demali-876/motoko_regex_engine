@@ -216,7 +216,7 @@ module {
                 };
               };
             };
-            case (#Anchor({ aType })) {
+            case (#Anchor({ aType; position })) {
               switch (aType) {
                 case (#StartOfString or #StartOfStringOnly) {
                   let startOfLine : Nat = if (Extensions.isMultiline(flags) and aType == #StartOfString) {
@@ -224,8 +224,8 @@ module {
                     // Start of the line
                     Debug.trap("Multiline with ^ is not supported yet");
                   } else 0; // Otherwise, it's the start of the string
-                  let startPosition : Nat = absPos - index;
-                  if (startPosition != startOfLine) {
+                  let startPosition : Nat = position;
+                  if (position != startOfLine) {
                     log("[match] Start of string anchor assertion failed. Expected position " #Nat.toText(startOfLine) # ", got " # Nat.toText(startPosition));
                     return false;
                   };
