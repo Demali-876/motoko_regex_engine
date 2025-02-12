@@ -34,6 +34,8 @@ runTestCases(
         ("/index.html", "^/index\\.html$", #ok({ capturedGroups = ?[]; lastIndex = 11; position = (0, 11); spans = [(0, 11)]; status = #FullMatch; string = "/index.html"; value = "/index.html" })),
         ("/index.html", "\\A/index\\.html\\z", #ok({ capturedGroups = ?[]; lastIndex = 11; position = (0, 11); spans = [(0, 11)]; status = #FullMatch; string = "/index.html"; value = "/index.html" })),
         ("/index.html\n", "^/index\\.html$", #ok({ capturedGroups = null; lastIndex = 11; position = (0, 0); spans = []; status = #NoMatch; string = "/index.html\n"; value = "" })),
+
+        ("file.txt", "^[^/]*\\.txt$", #ok({ capturedGroups = ?[]; lastIndex = 8; position = (0, 8); spans = [(0, 8)]; status = #FullMatch; string = "file.txt"; value = "file.txt" })),
     ],
 );
 
