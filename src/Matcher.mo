@@ -216,7 +216,7 @@ module {
                 };
               };
             };
-            case (#Anchor({ aType; position })) {
+            case (#Anchor({ aType })) {
               switch (aType) {
                 case (#StartOfString or #StartOfStringOnly) {
                   let startOfLine : Nat = if (Extensions.isMultiline(flags) and aType == #StartOfString) {
@@ -224,8 +224,9 @@ module {
                     // Start of the line
                     Debug.trap("Multiline with ^ is not supported yet");
                   } else 0; // Otherwise, it's the start of the string
-                  if (position != startOfLine) {
-                    log("[match] Start of string anchor assertion failed. Expected position " #Nat.toText(startOfLine) # ", got " # Nat.toText(position));
+                  let startPosition : Nat = absPos - index;
+                  if (startPosition != startOfLine) {
+                    log("[match] Start of string anchor assertion failed. Expected position " #Nat.toText(startOfLine) # ", got " # Nat.toText(startPosition));
                     return false;
                   };
                 };
@@ -235,8 +236,9 @@ module {
                     // End of the line
                     Debug.trap("Multiline with $ is not supported yet");
                   } else totalSize; // Otherwise, it's the end of the string
-                  if (position != endOfLine) {
-                    log("[match] End anchor assertion failed. Expected position " # Nat.toText(endOfLine) # ", got " # Nat.toText(position));
+                  let endPosition : Nat = absPos;
+                  if (endPosition != endOfLine) {
+                    log("[match] End anchor assertion failed. Expected position " # Nat.toText(endOfLine) # ", got " # Nat.toText(endPosition));
                     return false;
                   };
                 };
