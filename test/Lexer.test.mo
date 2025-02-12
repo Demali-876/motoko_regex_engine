@@ -1,4 +1,4 @@
-import { test; suite; expect } "mo:test";
+import { test; expect } "mo:test";
 import Bool "mo:base/Bool";
 import Text "mo:base/Text";
 import Result "mo:base/Result";
@@ -36,7 +36,7 @@ let tokenizeCases : [(Text, Result.Result<[Types.Token], Types.RegexError>)] = [
   ("(abc", #err(#GenericError("Unclosed group at position 4"))),
   ("[abc", #err(#GenericError("Unclosed character class at position 0"))),
   ("^/index\\.htm$", #ok([{ position = #Instance(0); tokenType = #Anchor(#StartOfString); value = "^" }, { position = #Instance(1); tokenType = #Character('/'); value = "/" }, { position = #Instance(2); tokenType = #Character('i'); value = "i" }, { position = #Instance(3); tokenType = #Character('n'); value = "n" }, { position = #Instance(4); tokenType = #Character('d'); value = "d" }, { position = #Instance(5); tokenType = #Character('e'); value = "e" }, { position = #Instance(6); tokenType = #Character('x'); value = "x" }, { position = #Instance(8); tokenType = #Character('.'); value = "\\." }, { position = #Instance(9); tokenType = #Character('h'); value = "h" }, { position = #Instance(10); tokenType = #Character('t'); value = "t" }, { position = #Instance(11); tokenType = #Character('m'); value = "m" }, { position = #Instance(12); tokenType = #Anchor(#EndOfString); value = "$" }]))
-  // Broken tests
+  // TODO Broken tests
   // ("{1}", #err(#InvalidQuantifier("Quantifier without preceding token"))),
   // ("a{0}", #err(#InvalidQuantifier("Min quantifier must be greater than 0"))),
   // ("a{5,3}", #err(#InvalidQuantifier("Max quantifier must be greater than min"))),
