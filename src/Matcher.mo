@@ -6,6 +6,7 @@ import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
 import { substring; charAt; containsState; compareChars; isInRange } "Extensions";
+import Extensions "Extensions";
 
 module {
   public class Matcher() {
@@ -213,6 +214,33 @@ module {
                     return false;
                   };
                 };
+              };
+            };
+            case (#Anchor({ aType; position })) {
+              switch (aType) {
+                case (#StartOfString or #StartOfStringOnly) {
+                  let startOfLine : Nat = if (Extensions.isMultiline(flags) and aType == #StartOfString) {
+                    // TODO
+                    // Start of the line
+                    Debug.trap("Multiline with ^ is not supported yet");
+                  } else 0; // Otherwise, it's the start of the string
+                  if (position != startOfLine) {
+                    log("[match] Start of string anchor assertion failed. Expected position " #Nat.toText(startOfLine) # ", got " # Nat.toText(position));
+                    return false;
+                  };
+                };
+                case (#EndOfString or #EndOfStringOnly) {
+                  let endOfLine : Nat = if (Extensions.isMultiline(flags) and aType == #EndOfString) {
+                    // TODO
+                    // End of the line
+                    Debug.trap("Multiline with $ is not supported yet");
+                  } else totalSize; // Otherwise, it's the end of the string
+                  if (position != endOfLine) {
+                    log("[match] End anchor assertion failed. Expected position " # Nat.toText(endOfLine) # ", got " # Nat.toText(position));
+                    return false;
+                  };
+                };
+                case _ {};
               };
             };
             case _ {};
