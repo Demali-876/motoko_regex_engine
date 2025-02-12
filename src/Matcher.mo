@@ -199,7 +199,7 @@ module {
                       log("[match] Not enough text behind for positive lookbehind");
                       return not la.isPositive;
                     };
-                    let behindStart = absPos - len;
+                    let behindStart : Nat = absPos - len;
                     let lookbehindText = substring(text, behindStart, absPos);
                     log("[match] Lookbehind text = '" # lookbehindText # "'");
                     let succeeded = runSubNFA(la, lookbehindText, flags);
