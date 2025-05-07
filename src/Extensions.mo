@@ -62,6 +62,13 @@ module {
     };
   };
 
+  public func isMultiline(flags : ?Types.Flags) : Bool {
+    switch (flags) {
+      case (?f) f.multiline;
+      case (null) false;
+    };
+  };
+
   public func substring(text : Text, start : Nat, end : Nat) : Text {
     let chars = Text.toArray(text);
     assert (start <= end);

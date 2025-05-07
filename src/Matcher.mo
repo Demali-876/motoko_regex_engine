@@ -6,6 +6,7 @@ import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
 import { substring; charAt; containsState; compareChars; isInRange } "Extensions";
+import Extensions "Extensions";
 
 module {
   public class Matcher() {
@@ -199,7 +200,7 @@ module {
                       log("[match] Not enough text behind for positive lookbehind");
                       return not la.isPositive;
                     };
-                    let behindStart = absPos - len;
+                    let behindStart : Nat = absPos - len;
                     let lookbehindText = substring(text, behindStart, absPos);
                     log("[match] Lookbehind text = '" # lookbehindText # "'");
                     let succeeded = runSubNFA(la, lookbehindText, flags);
@@ -213,6 +214,35 @@ module {
                     return false;
                   };
                 };
+              };
+            };
+            case (#Anchor({ aType; position })) {
+              switch (aType) {
+                case (#StartOfString or #StartOfStringOnly) {
+                  let startOfLine : Nat = if (Extensions.isMultiline(flags) and aType == #StartOfString) {
+                    // TODO
+                    // Start of the line
+                    Debug.trap("Multiline with ^ is not supported yet");
+                  } else 0; // Otherwise, it's the start of the string
+                  let startPosition : Nat = position;
+                  if (position != startOfLine) {
+                    log("[match] Start of string anchor assertion failed. Expected position " #Nat.toText(startOfLine) # ", got " # Nat.toText(startPosition));
+                    return false;
+                  };
+                };
+                case (#EndOfString or #EndOfStringOnly) {
+                  let endOfLine : Nat = if (Extensions.isMultiline(flags) and aType == #EndOfString) {
+                    // TODO
+                    // End of the line
+                    Debug.trap("Multiline with $ is not supported yet");
+                  } else totalSize; // Otherwise, it's the end of the string
+                  let endPosition : Nat = absPos;
+                  if (endPosition != endOfLine) {
+                    log("[match] End anchor assertion failed. Expected position " # Nat.toText(endOfLine) # ", got " # Nat.toText(endPosition));
+                    return false;
+                  };
+                };
+                case _ {};
               };
             };
             case _ {};
